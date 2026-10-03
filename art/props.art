@@ -1,0 +1,1261 @@
+# LAST AISLE - props.art  (store fixtures, furniture, vehicles, signs, free props)
+# Light from top-left, 1px dark outline, soft ',' drop shadow to the bottom-right.
+
+# ---------------------------------------------------------------- gondola shelves
+# horizontal double-sided gondola; tiles seamlessly left-right.
+# rows: 0 outline | 1 lip+price tags | 2-5 goods | 6-7 spine | 8-11 goods | 12 lip | 13 outline | 14 shadow
+@frames p_shelf 6 16 16
+0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+55h5555555h55555 55h5555555h55555 55h5555555h55555 55h5555555h55555 55h5555555h55555 55h5555555h55555
+7651765176517651 XXXpppbbbgggyyyy 1h111y111h111y11 XXX1765EEEe15651 z6z16561oooo1z6z 7hh1bbb11h117hh1
+rrR1hhH1rrR1rrR1 yryryrBhBGyGohoo bbB1ccC1bbB1ccC1 yry1rrREhEe1ooO1 6B615251ohoo16r6 BBB1BhB1ooo1GGG1
+rrR1rrR1rrR1rrR1 yyyrrrBBBGGGoooo BbB1CcC1BbB1CcC1 yyy1rrREEEe1ooO1 BBB16561oooo1rrr hhh1BBB1oho1hhh1
+hhH1hhH1hhH1hhH1 YYYRRRdddvvvOOOO dBd1tCt1dBd1tCt1 YYY1hhHeeef1OOx1 ddd15451OOOO1RRR HHH1ddd1OOO1HHH1
+4444444444444444 4444444444444444 4444444444444444 4444444444444444 4444444444444444 4444444444444444
+2222222222222222 2222222222222222 2222222222222222 2222222222222222 2222222222222222 2222222222222222
+1765176517651765 uuuuXXXgggpppbbb 11y111h111y111h1 1pppp76511y1uuuu 1yyyyrrrrBBBB656 11h117hh1bbb17hh
+1rrR1rrR1hhH1rrR UyUUyryGyGryrBhB 1ccC1bbB1ccC1bbB 1ryrrhhH1ccCUyUU 1y65yr66rBz5B525 1ooo1BBB1BhB1GGG
+1rrR1rrR1rrR1rrR UUUUyyyGGGrrrBBB 1CcC1BbB1CcC1BbB 1rrrrrrR1CcCUUUU 1y56yr66rB5zB656 1oho1hhh1BBB1hhh
+1hhH1hhH1hhH1hhH qqqqYYYvvvRRRddd 1tCt1dBd1tCt1dBd 1RRRRhhH1tCtqqqq 1YYYYRRRRdddd545 1OOO1HHH1ddd1HHH
+44H4444444H44444 44H4444444H44444 44H4444444H44444 44H4444444H44444 44H4444444H44444 44H4444444H44444
+0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+,,,,,,,,,,,,,,,, ,,,,,,,,,,,,,,,, ,,,,,,,,,,,,,,,, ,,,,,,,,,,,,,,,, ,,,,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,
+................ ................ ................ ................ ................ ................
+
+@frames p_shelf_empty 2 16 16
+0000000000000000 0000000000000000
+55h5555555555555 5555555555h55555
+3333333333333333 3333333333333333
+3343333333333433 33333333XyY33333
+3333333333333333 33343333yYY33333
+2222222222222222 22222222YYY22222
+4444444444444444 4444444444444444
+2222222222222222 2222222222222222
+2222222222222222 2222222222222222
+3333336rrR333333 3433333333333343
+33333335RRx33333 33333BbB12333333
+3343333333333333 3333335dBd333333
+4444444444H44444 44H4444444444444
+0000000000000000 0000000000000000
+,,,,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,
+................ ................
+
+# [0] left end cap with a promo bay, [1] right end cap
+@frames p_shelf_end 2 16 16
+.000000000000000 000000000000000.
+055h55555555h555 55h5555555h55530
+05ppp41765176511 17651765112ppp30
+05pyp41rrR1rrR11 1rrR1rrR112pyp30
+05mpm41hhH1rrR11 1hhH1rrR112mpm30
+05rrr41hhH1hhH11 1hhH1hhH112rrr30
+0544444444444444 4444444444444430
+0532222222222222 2222222222222230
+05rhr41765176511 17651765112rhr30
+05rrr41rrR1rrR11 1rrR1rrR112rrr30
+05RRR41rrR1hhH11 1rrR1hhH112RRR30
+05hhh41hhH1hhH11 1hhH1hhH112hhh30
+0544H4444444H444 44H4444444H44430
+.000000000000000 000000000000000.
+..,,,,,,,,,,,,,, ,,,,,,,,,,,,,,,.
+................ ................
+
+@rot p_shelfv p_shelf 90
+
+@rot p_shelfv_empty p_shelf_empty 90
+
+@rot p_shelfv_end p_shelf_end 90
+
+# toppled gondola lying face-up: shelf boards like a ladder, goods spilled around
+@frames p_shelf_fallen 2 16 16
+................ ..765...........
+.0000000000000.. ..rrR,.0000000..
+.0555555555550.. ..hhH,.0555550..
+.041r12BB11y40,. .......04BB1y0,.
+.041R12dd1yY40,. .0000000411yY0,.
+.0555555555550,. .0555555555550,.
+.04112r111b140,. .041r1G11b1140,.
+.0411hR111B140,. .041R1v11B1140,.
+.0555555..5550,. .0555555555550,.
+.0412111..1140,. .04111h211r140,.
+.04111vG1111y0,. .0411111111R40,.
+.05555555555y0,. .0555555555550,.
+.00000000000y0,. .0000000000000,.
+..,,,,,,,,,,,,.y ..,,,,,,,,,,,,,.
+.765..yY...bB.yY .b.....Gv..yy...
+.rrR,.YY,..Bd,.. .Bd,...vV,.YY,..
+
+# ---------------------------------------------------------------- wall fridge
+# back against the TOP of the tile, glass doors along the bottom
+@frames p_fridge 2 16 16
+0000000000000000 0000000000000000
+4343434343434343 4343434343434343
+3333333333333333 3333333333333333
+2222222222222222 2222222222222222
+JJJJJJJzJJJJJJJz JJJJJJJzJJJJJJJz
+J1h1h1hzJ1y1h1yz J111111zJ111111z
+JrRgGbBzJrRIoOyz J111111z0111111z
+JrRgIbBzJrRoOyYz J11111Iz0111111z
+JxRvGdBzJxRoOYYz J11111Iz01111r1z
+JzzzzzzzJzzzzzzz JzzzzzzzJzzzzzzz
+J5r5y5bzJ5G5r5yz J111111z0111111z
+JrRyYbIzJGvrRyYz J1111I1z01b1111z
+JRxYYdBzJvvRxYYz J11111Iz01dB111z
+JjjjjjjzJjjjjjjz JjjjjjjzJjjjjjjz
+2222222222222222 22222222zzI;~~~2
+0000000000000000 00000000z~~;~~~.
+
+@rot p_fridge_r p_fridge 270
+
+@rot p_fridge_l p_fridge 90
+
+# ---------------------------------------------------------------- checkout
+@frames p_counter 3 16 16
+................ ................ ................
+................ ................ ................
+..00000000000000 0000000000000000 00000000000000..
+.066666666666666 6666666666666666 666666666666650.
+.065555555555555 5555555555555555 5555555555555530
+0651112111211121 1112111211121112 2111222hhH222530
+0651111111111111 1111111111111111 11112hh7hH22h530
+0651112111211121 1112111211121112 11112hhhhH22H530
+0655555555555555 5555555555555555 5555555555555530
+0644444444444444 4444444444444444 4444444444444430
+06RRRRRRRRRRRRRR RRRRRRRRRRRRRRRR RRRRRRRRRRRRRRx0
+.0xxxxxxxxxxxxxx xxxxxxxxxxxxxxxx xxxxxxxxxxxxxx0.
+..00000000000000 0000000000000000 00000000000000,.
+...,,,,,,,,,,,,, ,,,,,,,,,,,,,,,, ,,,,,,,,,,,,,,,.
+................ ................ ................
+................ ................ ................
+
+@sprite p_register 16 16
+................
+................
+...0000000000...
+..022222222220..
+..0t2c2tt22220..
+..022222222220,.
+..036565653330,.
+..035656563330,.
+..036565653330,.
+..033333333330,.
+..011111111110,.
+..01G1h1v11110,.
+..01G1hG111110,.
+..000000000000,.
+...,,,,,,,,,,,,.
+................
+
+# ---------------------------------------------------------------- crates / boxes / pallets
+@frames p_crate 2 16 16
+................ ................
+.00000000000000. .00000000000000.
+.0nwwwwwwwwwwn0. .0nwwwwwwwwwwn0.
+.0wnnnnnnnnnnW0. .0w0000000000W0.
+.0w5wwwwwwww5W0. .0w0NYNyYNYN0W0.
+.0wWWWWWWWWWWW0. .0w0YyYNyY1y0W0.
+.0wNNNNNNNNNNW0. .0w0NY765YNY0W0.
+.0wwwwwwwwwwwW0. .0w0YyrrRyNY0W0.
+.0wWWWWWWWWWWW0. .0w0NYhhHY1N0W0.
+.0wNNNNNNNNNNW0. .0w0yNYyNYyY0W0.
+.0w5wwwwwwww5W0. .0w0NYNYNYNY0W0.
+.0wWWWWWWWWWWW0. .0w0000000000W0.
+.0nWWWWWWWWWWN0, .0nWWWWWWWWWWN0,
+.00000000000000, .00000000000000,
+..,,,,,,,,,,,,,, ..,,,,,,,,,,,,,,
+................ ................
+
+@frames p_box 3 16 16
+................ ................ ................
+................ ................ ................
+..0000000000.... .....000000000.. ................
+..0wwwwwwwwW0... ....0wwwwwwwW0.. .....000000.....
+..0wwwHhwwwW0... ...0wwwwwwwW0... .....0wwhW0.....
+..0wwwHhwwwW0... ..00000000000... .....0wwhW0,....
+..0WWWHhWWWn0... ..0wNNNNNNNNW0.. .....0WWHn0,....
+..0wwwHhwwwW0,.. ..0wN1765N1NW0,. ..0000000000000.
+..0wwwHhwwwW0,.. .0w0N1rrRNNNW0,. ..0wwwwwwwwwwW0,
+..0wwwHhwwwW0,.. 0wW0NNhhH1NNW0,. ..0wWwwWwwWwwW0,
+..0WWWWWWWWn0,.. 0wW0NNNNNNNNW0,. ..0wwwwnwwwwwn0,
+..0nnnnnnnnN0,.. .00wWWWWWWWWn0,. ..0WWnWWWWnWWN0,
+..0000000000,,.. ...0nnnnnnnnN0,. ..0000000000000,
+...,,,,,,,,,,... ...0000000000,,. ...,,,,,,,,,,,,,
+................ ....,,,,,,,,,,.. ................
+................ ................ ................
+
+@sprite p_pallet 16 16
+................
+.0000000000000..
+.0wwwwwwwwwwwW0.
+.0WWWWWWWWWWWN0.
+.0NN0...NN0.NN0,
+.0wwwwwwwwwwwW0,
+.0WWWWWWWWWWWN0,
+.0NN0...NN0.NN0,
+.0wwwwwwwwwwwW0,
+.0WWWWWWWWWWWN0,
+.0NN0...NN0.NN0,
+.0wwwwwwwwwwwW0,
+.0WWWWWWWWWWWN0,
+.0000000000000,,
+..,,,,,,,,,,,,,.
+................
+
+@sprite p_pallet_goods 16 16
+................
+.0000000000000..
+.07Iwwwwwwwww70.
+.0Iwwwwww7wwWI0.
+.0wWWWWWW0WWWN0.
+.0wwwwww70wwwW0,
+.0wwhhww0IwhhW0,
+.07WWWWW0WWWWN0,
+.0000000000000I,
+.0IwwwwI0wwww70,
+.0wwhhwwW0whhW0,
+.0WWWWWWW0WWWN0,
+.0NN0NNN0NN0NN0,
+.0000000000000,,
+..,,,,,,,,,,,,,.
+................
+
+# ---------------------------------------------------------------- hazards / misc fixtures
+@sprite p_barrel 16 16
+................
+.....000000.....
+...00RRRRRR00...
+..0RpprrrrrrR0..
+..0prrryrr66R0..
+.0Rprryyyr56rR0.
+.0rpryy0yyrrrR0,
+.0rryyy0yyyrRR0,
+.0rrryyyyyrRRR0,
+.0rRrry0yrRRRx0,
+.0rRRrryrrRRRx0,
+..0rRRrrrRRRx0,,
+..0RRRRRRRRxx0,.
+...00RRRxxx00,,.
+.....000000,,...
+.......,,,,.....
+
+@frames p_locker 2 16 16
+0000000000000000 0000000000000000
+zJzJzJzJzJzJzJzJ zJzJzJzJzJzJzJzJ
+JJJJJJJJJJJJJJJJ JJJJJJJJJJJJJJJJ
+jjjjjjjjjjjjjjjj jjjjjjjjjjjjjjjj
+0JzzzzJ00JzzzzJ0 0JzzzzJ00111110.
+0J1111J00J1111J0 0J1111J001z1110.
+0JzzzzJ00JzzzzJ0 0JzzzzJ00111110.
+0J1111J00J1111J0 0J1111J00111RR0.
+0JJJJ6J00JJJJ6J0 0JJJJ6J0011Rx10.
+0JJJJzJ00JJJJzJ0 0JJJJzJ00111110z
+0JJhJJJ00JJhJJJ0 0JJhJJJ0011110zJ
+0JJJJJJ00JJJJJJ0 0JJJJJJ001110zJJ
+0JJJJJJ00JJJJJJ0 0JJJJJJ00110zJJ0
+0jjjjjj00jjjjjj0 0jjjjjj0010zJJ0,
+0000000000000000 000000000000J0,,
+,,,,,,,,,,,,,,,, ,,,,,,,,,,,,,,..
+
+@sprite p_toilet 16 16
+................
+...0000000000...
+...0777777hH0...
+...07hhhhhhH0...
+...0hhh56hhH0...
+...0HHHHHHHH0...
+....0000000,....
+...07hhhhhH0,...
+..07h0000hHH0,..
+..0h0iiii0hH0,..
+..0h0iYii0HH0,..
+..0h0iiii0HH0,..
+..0hH0000HHH0,..
+...0hHHHHHH0,,..
+....0000000,,...
+.....,,,,,,.....
+
+@sprite p_sink 16 16
+0000000000000000
+2222222222222222
+...0000000000...
+..07777777hhH0..
+..07h0000000H0..
+..0h0Iii6iii0H0.
+..0h0iiiiiii0H0,
+..0h0iii1iii0H0,
+..0h0iiiiiiY0H0,
+..0hH0000000HH0,
+..0hHHHHHHHHHH0,
+...00000000000,,
+....,,,,,,,,,,,.
+................
+................
+................
+
+@frames p_pegboard 2 16 16
+0000000000000000 0000000000000000
+wwwwwwwwwwwwwwww wwwwwwwwwwwwwwww
+wNwNwNwNwNwNwNwN wNwNwNwNwNwNwNwN
+WWWWWWWWWWWWWWWW WWWWWWWWWWWWWWWW
+0000000000000000 0000000000000000
+.6...6....6...6. .6...6....6...6.
+.5..656..656..5. .5...5....5...5.
+056.656..65605.. .5...5....5...5.
+056..5..0650056. .....,....,.....
+0r5..5..065.056. ................
+0r1.0n0..6..0n0. ...........6....
+0R1.0n0..5..0n0. ...........5....
+.0..0n0..0..0n0. ...........,....
+....0N0.....0N0. ................
+.....0.......... ................
+................ ................
+
+@frames p_vending 2 16 16
+000000000000000. 000000000000000.
+022222222222220. 022222222222220.
+023232323232320. 023232323232320.
+022222222222220. 022222222222220.
+0RRRRRRRRRRRRR0. 0RRRRRRRRRRRRR0.
+0R00000000333R0. 0R0I000I00333R0.
+0R0y1o1G10tc3R0, 0R011I1110t33R0,
+0R0Y1O1v10333R0, 0R01111110331R0,
+0R0r1B1p10353R0, 0R01I11110313R0,
+0R0R1d1m10535R0, 0R0111I110131R0,
+0R0I1y1r10353R0, 0R011r1110353R0,
+0R00000000z33R0, 0R0I000000z33R0,
+0R1111111111RR0, 0R1111111111RR0,
+0xxxxxxxxxxxxx0, 0xxxxxxxxxxxxx0,
+000000000000000, 000000000000000,
+.,,,,,,,,,,,,,,, .,,,,I,,~,,,;,,,
+
+@frames p_campfire 3 16 16
+................ ................ ................
+......545....... ......545....... ......545.......
+...543...54..... ...543...54..... ...543...54.....
+..43........543. ..43...r....543. ..43........543.
+.......O........ ........O....... ......o.r.......
+.54...rOo....43. .54...rOy....43. .54...OrO....43.
+.43..nOyoO...33. .43..nOyyoO..33. .43..nOyOo...33.
+.33.WnoXyO.n.... .33.WOyXXyo..... .33.WoyyXO.n....
+....NOoXXyoW.54. ....NoyXXyoW.54. ....NOoXyyoW.54.
+.54..ryyyon..43. .54..royyon..43. .54..rOyyOn..43.
+.433..OooO...... .433..OooO...... .433..rOoO......
+..33..nWN....54. ..33..nWN....54. ..33..nWN....54.
+.......N.....33. .......N.....33. .......N.....33.
+....545..545.... ....545..545.... ....545..545....
+....343..343.... ....343..343.... ....343..343....
+................ ................ ................
+
+@frames p_bush 3 16 16
+................ ................ ................
+.....1111....... ................ ......n..T......
+...11GGvv11..... ...1..11..1..... ...T.nWn.W.n....
+..1GgGvGGvV1.... ..1v11Zv11v1.... ..nWnTWnTnWTn...
+.1GGvvGgGvvV1... .1ZvZvVZvZvV1... ..TnWWnNWnWnW...
+.1vGGvGGvVvVV1.. ..1VZTZvVZVV1... .nWnTNnWNTWnWT..
+1GgGvVvvGGvVVV1. .1vZvVZZTvZVV1.. .TWNnWNNWnNWnW..
+1vGvvGGvVvGvVV1. 1ZvTZZVvZvVZVV1. TnWnNWNNNWnTWn,.
+1vvVGgGvVVvVVV1, .1VvZVZTZVZVV1,. .WnTNWNNWNnWNT,.
+.1VvGGvVVvVVVV1, ..1VZvVZZVVVV1,. .nWnWNWNnWNWnW,.
+.1VVvvVVVVVVV1,, .1vVVZVVVZVV1,,. ..TWnWnNWnTWn,,.
+..1VVVVVVVVV1,,. ..11VVV1VVV11,.. ..nTWnWTnWnT,,..
+...111VVV111,,.. ....111.111,,... ...W.nTWnTW,,...
+.....111111,,... ......,,,,,..... .....,,,,,,,....
+.......,,,,..... ................ ................
+................ ................ ................
+
+@sprite p_lamppost 16 16
+................
+................
+........0000000.
+.......05666650.
+.......05XXXX50,
+.......0344443,,
+......043000000,
+.....043,,,,,,,.
+....043,........
+...043,.........
+.00433,.........
+05653,..........
+04532,..........
+.0000,..........
+..,,,...........
+................
+
+@sprite p_clothes_rack 16 16
+................
+.....000000.....
+...00rRRBBd00...
+..0yrrR0BBddd0..
+.0yyY066660Bd0..
+.0yY06111160u0..
+0GGY0610016uUU0.
+0GvG06100160UU0,
+0vGv06111160qU0,
+.0vv0666660Uq0,,
+.0hhH000000pm0,.
+..0hhHH0ppmm0,,.
+...00HH0pm00,,..
+.....000000,,...
+.......,,,,.....
+................
+
+@sprite p_mannequin 16 16
+.111............
+1hhE1...........
+1hEE1.11........
+.1HH11hE1.......
+..11hhEE11......
+.1hh1hEEEH1.....
+1hE1.1hEEHH1....
+1E1,..1hEEH1....
+.1,....1EEHH1...
+........1EHHH1..
+.......1hE11HH1.
+......1hE1,1EH1.
+......1E1,.1EH1.
+.....1hE1,..1H1,
+.....1H1,...1H1,
+......1,.....1,.
+
+@sprite p_tv 16 16
+....6......6....
+.....5....5.....
+......5..5......
+..000000000000..
+..034343434330..
+..033333333330..
+.00000000000000.
+.03jjjjjjjjj440,
+.03jJJjjjjjj460,
+.03jjJjjjjjj440,
+.03jjjjjjjjj460,
+.03jjjjjjjjj440,
+.02222222222220,
+.00000000000000,
+..,,,,,,,,,,,,,.
+................
+
+
+# ---------------------------------------------------------------- larger props (pivot top-left)
+@frames p_freezer 2 32 16
+................................ ................................
+.000000000000000000000000000000. .000000000000000000000000000000.
+.0777777777777777777777777777h0. .0777777777777777777777777777h0.
+.07zzzzzzzzzzzzzzzzzzzzzzzzzzH0. .07zzzzzzzzzzzzzzzzzzzzzzzzzzH0.
+.07zIBhBBIrrRhyzzyYbBBIhrrRhzH0, .07ziiIiiiiiiiizziiiiiiiiiiizH0,
+.07zBIhBdrrRRhYzzYYbBdhhrRRIzH0, .07zij1I1111jjizzi11111111jjzH0,
+.07zhhIGGIbbbhhzzIGGvhhhBBhhzH0, .07zi1111I111jizzij1111111jjzH0,
+.07zhvGGvbbBbhHzzGGvvhIhBdhhzH0, .07zi11111111jizzij11BbB111izH0,
+.07zrrRIhhyyYBBzzhhrrRhyyYbIzH0, .07zij11111111izzi111Bdd11jizH0,
+.07zrRRhhhyYYBdzzhhrRRIyYYbdzH0, .07zijjj1111jjizzijj11111jjizH0,
+.07zhhhhIhhhhhhzzhhhhhhhIhhhzH0, .07ziiiiiiiiiiizziiiiiiIiiiizH0,
+.07JJJJJJJJJJJJJJJJJJJJJJJJJJH0, .07JJJJJJJJJJJJJJJJJJJJJJJJJJH0,
+.0HHHHHHHHHHHHHHHHHHHHHHHHHHHH0, .0HHHHHHHHHHHHHHHHHHHHHHHHHHHH0,
+.0eeeerreeeeeeeeeeeeeeerreeeee0, .0eeeerreeeeeeeeeeeeeeerreeeee0,
+.000000000000000000000000000000, .000000000000000000000000000000,
+..,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, ..,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+@sprite p_desk 32 16
+................................
+.000000000000000000000000000000.
+.0wwwwwwwwwwwwwwwwwwwwwwwwwwwwW0
+.0w000000wwwwwwwwwwwwhhhhwwwwwW0
+.0w023320wwwwwwwwwwwh7hhHwwwwwW0
+.0w023320wwwwwwwwwwwhhhhHwwwwwW0
+.0w022220wwwwww0000000whhHwwwwW0
+.0w000j00wwwwww0565650wHHHwwwwW0
+.0wwww0wwwwwwwww0656560wwwwwwwW0
+.0wwwwwwwwwww00wwwwwwwwwww0r0wW0
+.0wwwwwwwwwww0wwwwwwwwwwww0rr0W0
+.0WWWWWWWWWWWWWWWWWWWWWWWWWWWWW0
+.0nnnnnnnnnnnnnnnnnnnnnnnnnnnnn0
+.000000000000000000000000000000,
+..,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+................................
+
+@sprite p_bench 32 12
+................................
+.00000000000000000000000000000..
+.0350wwwwwwwwwwwwwwwwwwwww0350..
+.0350WWWWWWWWWWWWWWWWWWWWW0350,.
+.0350,,,,,,,,,,,,,,,,,,,,,0350,.
+.0350wwwwwwwwwwwwwwwwwwwww0350,.
+.0350WWWWWWWWWWWWWWWWWWWWW0350,.
+.0350,,,,,,,,,,,,,,,,,,,,,0350,.
+.0350wwwwwwwwwwwwwwwwwwwww0350,.
+.0350WWWWWWWWWWWWWWWWWWWWW0350,.
+.00000000000000000000000000000,.
+..,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.
+
+@sprite p_lumber 32 16
+................................
+..00000000000000000000000000000.
+..0hwwwwww5wwwwwwwwwwwww5wwwwW0.
+..0eWWWWWW3WWWWWWWWWWWWW3WWWWn0,
+.000NNNNNN3NNNNNNNNNNNNN3NNNN00,
+.0hwwwwwww5wwwwwwwwwwwww5wwwW0,,
+.0eWWWWWWW3WWWWWWWWWWWWW3WWWn0,.
+.00NNNNNNN3NNNNNNNNNNNNN3NNNN00.
+...0hwwwww5wwwwwwwwwwwww5wwwwwW0
+...0eWWWWW3WWWWWWWWWWWWW3WWWWWn0
+..00NNNNNN3NNNNNNNNNNNNN3NNNNNN0
+..0hwwwwww5wwwwwwwwwwwww5wwwwW00
+..0eWWWWWW3WWWWWWWWWWWWW3WWWWn0,
+..000000000000000000000000000000
+...,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+................................
+
+@sprite p_dumpster 32 24
+................................
+.....vvvvvvvvvvvvvvvvvvvvvvvv...
+....vGGGGGGGGGGGGGGGGGGGGGGGGv..
+....0000000000000000000000000...
+.0000000000000000000000000000000
+.0G3333333333330vv0111111111110.
+.0GvvvvvvvvvvvV0Gv01j21122j2110,
+.0GGGGGGGGGGGGV0Gv0122jj12211j0,
+.0GvvvvvvvvvvvV0Gv011j2211jj210,
+.0GGGGGGGGGGGGV0Gv0221111j21120,
+.0GvvvvvvvvOvvV0Gv01j2hh112j110,
+.0GGGGGGGGOnGGV0Gv0112hH1j21210,
+.0GvvvvvvvvvvvV0Gv0211112211j10,
+.0GGGGGGGGGGGGV0Gv01j2211j21110,
+.0GvvvvvvvvvvvV0Gv0111111111110,
+.0VVVVVVVVVVVVV0VV0VVVVVVVVVVV0,
+.000000000000000000000000000000,
+.0VvVVVVVOVVVVVVVVVVVVVVVnVVVV0,
+.0VvVVVVOnVVVVVVVVVVVVVVVOVVVV0,
+.0ZZZZZZZZZZZZZZZZZZZZZZZZZZZZ0,
+.000000000000000000000000000000,
+..1111.....................1111,
+..,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+................................
+
+@sprite p_gaspump 16 24
+................
+....00000000....
+...0hEEEEEEE0...
+..0hE.000.EEe0..
+..0E.0yyY0.Ee0..
+..0E.0yYY0.Ee0,.
+..0E..000..Ee0,.
+..0EEEEEEEEEe0,.
+..0E00000000e0,.
+..0E0rrrrrR0e0,.
+.z0E0344443Ie0,.
+z10E0433332Ie0,.
+z.0E0433332Ie0,.
+.z0E0433332Ie0,.
+..zE0322221Ie0,.
+..0E00000000e0,.
+..0EEEEEEEEEe0,.
+..0E..000..Ee0,.
+..0E.0yyY0.Ee0,.
+..0E.0yYY0.Ee0,.
+..0Ee.000.eee0,.
+...0eeeeeeee0,,.
+....00000000,,..
+.....,,,,,,,,...
+
+@sprite p_sleepingbag 16 24
+................
+....00000000....
+...0TTZTTZTT0...
+...0ZTTZTZTZ0,..
+..000000000000..
+..0bbbbbbbbbB0..
+..0bBBBBBBBBd0,.
+..0BBBBBBBBzd0,.
+..0BbBBBBBBzd0,.
+..0BBBBBBBBzd0,.
+..0ddddddddzD0,.
+..0BbBBBBBBzd0,.
+..0BBBBBBBBzd0,.
+..0BBBBBBBBzd0,.
+..0ddddddddzD0,.
+..0BbBBBBBBzd0,.
+..0BBBBBBBBzd0,.
+..0BBBBBBBBzd0,.
+..0ddddddddzD0,.
+..0BbBBBBBBzd0,.
+..0dBBBBBBBdD0,.
+...0ddddddDD0,,.
+....00000000,,..
+.....,,,,,,,,...
+
+@sprite p_mattress 24 32
+........................
+.0000000000000000000000.
+.0EhhhhhhhhhhhhhhhhhhE0.
+.0hhH0000000000000HhhE0.
+.0hH07777777777hh0HhhE0,
+.0hH07hhhhhhhhhhH0HhhE0,
+.0hH0HHHHHHHHHHHH0HhhE0,
+.0hhH000000000000HhhhE0,
+.0hhHhhHhhYYYhhHhhhhhE0,
+.0hHhhhhhYYeYYhhhhHhhE0,
+.0hhhhHhhhYYYhhHhhhhhE0,
+.0hhHhhhhHhhhhhhhhhHhE0,
+.0hhhhhhhhhhhHhhhhhhhE0,
+.0hHhh0000hhhhhhhHhhhE0,
+.0hhh0RRRR000hhhhhhhhE0,
+.0hh0RrrrRRRR00hhHhhhE0,
+.0h0RrrrrRrrRRR0000hhE0,
+.0h0RrRRRRrrrrRRRRR0hE0,
+.0h0RRrrRRRrrRRRrRRR0E0,
+.0hH0RRxRRRRRxRRRrRRR00,
+.0hhH0RRRxxRRRRxRRRRRx0,
+.0hhhH0RRRRxRRRRRxRRRx0,
+.0hhHhH0xRRRRRxRRRRRxx0,
+.0hhhhH0xxRRRRRRxxRRx0,.
+.0hhHhhH0xxxRRRRRRxx0,,.
+.0hhhhhhH00xxxxxxxx0,,..
+.0EEEEEEEEE000000000,...
+.0000000000000000000,...
+..,,,,,,,,,,,,,,,,,,,...
+........................
+..0000....000...........
+..0hy0,...0rR0,.........
+
+@sprite p_table 24 24
+........................
+.........000000.........
+........0oooooO0........
+........0oooooO0........
+........0OOOOOO0,.......
+.........000000,,.......
+.........,,,,,,,........
+.......0000000000.......
+.00...0zz6666665500..00.
+0oo0.0z66666666665500O00
+0oO0.0z66666666666550OO0
+0oO0.0z66666666666550OO0
+0oO0.0z66666666666550OO0
+0oO0.0566666666666550OO0
+0OO0,.0555666666555500O0
+.00,,..05555555555500.0,
+.,,.....000000000000..,,
+........,,,,,,,,,,,,....
+.........000000.........
+........0oooooO0........
+........0OOOOOO0,.......
+........0OOOOOO0,.......
+.........000000,,.......
+..........,,,,,,........
+
+
+# ---------------------------------------------------------------- mall set pieces
+@sprite p_escalator 32 48
+.000000000000000000000000000000.
+03216566666666666666666666431210
+03216556565656565656565656431210
+03216556565656565656565656431210
+03216556565656565656565656431210
+032165yyyyyyyyyyyyyyyyyyyy431210
+032165yyyyyyyyyyyyyyyyyyyy431210
+03216554545454545454545454431210
+03216554545454545454545454431210
+03216554545454545454545454431210
+032165yyyyyyyyyyyyyyyyyyyy431210
+03216554545454545454545454431210
+03216554545454545454545454431210
+03216554545hh4545454545454431210
+032165yyyyyyHyyyyyyyyyyyyy431210
+03216554545454545454545454431210
+03216554545454545454545454431210
+03216554545454545454545454431210
+032165YYYYYYYYYYYYYYYYYYYY431210
+03216543434343434343434343431210
+03216543434343434343434343431210
+03216543434343434343434343431210
+032165YYYYYYYYYYYYYYOYYYYY431210
+0321654343434343434On34343431210
+03216543434343434343434343431210
+03216543434343434343434343431210
+032165YYYYYYYYYYYYYYYYYYYY431210
+03216543434343434343434343431210
+03216543434343434343434343431210
+03216543434343434343434343431210
+032165YYYYYYYYYYYYYYYYYYYY431210
+03216532rR3232323232323232431210
+03216532323232323232323232431210
+03216532323232323232323232431210
+032165YYYYYYYYYYYYYYYYYYYY431210
+03216532323232321232323232431210
+03216532323232313132323232431210
+03216532323232123232323232431210
+032165nnnnnnnnnnnnnnnnnnnn431210
+03216521212121212121212121431210
+03216521212121212121212121431210
+03216521212121212121212121431210
+032165YYYYYYYYYYYYYYYYYYYY431210
+0321653232323232323232e232431210
+03216532323232323232323eE2431210
+03216532353232323232323232431210
+03216532323232323232323232431210
+.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+@sprite p_fountain 48 48
+................................................
+.................00000000000000.................
+...............00EEEEEEEEEEEEEE00...............
+.............00EEEhhhhhhhhhhhhEEE00.............
+...........00EEhhhhhhhhhhhhhhhhhhEE00...........
+..........0EEhhhhheeeeeeeeeeeehhhhhEE0..........
+........00EEhhheeejjjjjjjjjjjjeeehhhEE00........
+.......00EhhhheejjjjttttttttjjjjeehhhhE00.......
+......00Ehhheejjjttttttttttttttjjjeehh2H00......
+......0EhhheejjttttttttttttttttttjjeehE2H0......
+.....0EhhhejjjtttttttttttttttttZZtjjjEE2EH0.....
+....0EEhhejjttttttttttttttttttZvvZttttEEeHH0....
+....0EhheejttttttttttttttttttttvGvZtttEEEEH0....
+...0EhhhejjtttGGttttttttttttttttZZtttttEEEEH0...
+...0EhhejjtttGGvtttttttttttttttttttZttttEEEH0...
+..0EhheejttttvGGttttttttttttttttttttttttEEEEH0..
+..0EZhejjtttttvvtttttttttttttttttttttttttEEEH0..
+.0EZZhejtttttttttttttttttttttttttttttttttEEEHH0.
+.0EZhejjtttttttttttttthhhhttttttttttttttttEEEH0.
+.0EhhejjtttttttttttthhhhhhhhttttttttttttttEEEH0.
+.0EhhejtttttttttttthvveeeeeHHtjYttttttttttEEEH0.
+.0EhhejttttttttttttvGeeeeeEEHjjjttttttttttEEEH0.
+.0EhhejttttttttttthheZ5555EEHHjjttttttttttEEGH0.
+.0Ehhejttttttttttthhee5555EEHHjjttttttttttEGvH0.
+.0EhhejtttttttttYthhee5555EEHHjjtttttYttttEEVH0.
+.0Ehhejttttttttttthhee5555EEHHjjttttttttttEEEH0.
+.0EhhejttttttttttttheEEEEEEEHjjjttttttttttEEEH0.
+.0EhhejtttttttttttthHEEEE2EHHjjjttttttttttEEEH0.
+.0EhhejjttttttttttttHHHHHHeHjjjtttttttttttEEEH0.
+.0EhhejjtZZvtttttttttjHHHHjjjjttttGGttttttEEEH0.
+.0EEhhejZvvGZtZtttttjjjjjjjjjttttGGGvt6rREEZHH0.
+..0EhhejvGGvvZZtttttjjjjjjjjtttttvGGvt5RREEZZ0..
+..0EhheejvvZZvZtttttttttttttttttttvvttttEEEEH0..
+...0EhhejjZZvZttttttYtttttttttttttttttttEEEH0...
+...0EhhhejjtZZtttttttttttttytttttttttttEEEEH0...
+....0EhheejttttttttttttttttttttttttttTEEEEH0....
+....0EEhhejtttttttttttttttttttttttttZtEEEHH0....
+.....0GhhhEttttttttttttttGGttttttttttEEEEH0.....
+.....GvGhEEEEtttttttttttGvGttttttttEEEEEH0......
+......vVHEEEEEtttttttttttvvtttttttEEEEEH00......
+.......V0HEEEEEEttttttttttttttttEEEEEEH00.......
+........00HHEEEEETZtttttttttTZTEEEEEHH00........
+..........0HHEEEEEEEEEZTZEEEEEEEEEEHH0..........
+...........00HHEEEEEEEEEEEEEEEEEEHH00...........
+.............00HHHEEEEEEEEEEEEHHH00.............
+...............00HHHHHHHHHHHHHH00...............
+.................00000000000000.................
+................................................
+
+@sprite p_throne 32 32
+........000......0X0............
+...000.0z650.0O.0yXy0..0pp0.....
+..0oho00656z00O.0yyyY0.0p00p0.O.
+..0hhh00z56z0.O.0yYyY0.0p00p0OO.
+..0OO00000000000000000000000.0O.
+.....0666666666666666666665.....
+.....0616161616161616161615.....
+.....0666666666666666666665.....
+.....0616161616161616161615.....
+0000000555555555X555555550000000
+066666500000000YyY0000000066666,
+06161650uuuuuuuuuuuuuuuU0061616,
+066666Y0uUUUqUUUUqUUUUqU0Y666665
+06161650uUUUUUUUUUUUUUUq00616165
+06666650uUUqUUUUqUUUUqUq00666665
+06161650uUUUUUUUUUUUUUUq00616165
+06666650uu000000000000Uq00666665
+06161650uU0PPuuuuuuuu0Uq00616165
+066666Y0uU0Puuuuuuuuu0Uq0Y666665
+06161650uU0uuuuuuuuuU0Uq00616165
+06666650uU0uuuuUuuuuU0Uq00666665
+06161650uU0uuuuuuuuuU0Uq00616165
+06666650uU0uuuuuuuuUU0Uq00666665
+0rrrrrR0YY0UUUUUUUUUU0YY00rrrrrR
+0RRRRRY0000qqqqqqqqqq0000YRRRRRx
+0000000...0UuuuuuuuuU0...0000000
+01...10...0UuuuuuuuuU0...01...10
+..........0UUUUUUUUUU0..........
+.,,,,,....0qqqqqqqqqq0,...,,,,,.
+...........0000000000,..........
+...........,,,,,,,,,,,..........
+................................
+
+@sprite p_planter 32 32
+..G.............................
+...G.......................G....
+....vG....................GG....
+.0000v0000000000000000000Gv0000.
+.0hhhhhhhhhhvvGGGhhhhhhhhhhhhh0,
+.0hEEEvGGGEvvGgGGvEvvvEEEEEEEH0,
+.0hE1vGgGGvvGGGGvvVvvGGGvvvNEH0,
+.0hEvGGGGPpVGGGvvVVVGgGGvvvVEH0,
+.0hEvGGGvvpVVvvvVVvGGGGvvVVVVH0,
+.0hE1VvvvVVVVVVVVVPGGGvvVVVVVH0,
+.0hE1NvVVVVVVvvVvpPVvvvVVVVVEH0,
+.0hE1NvVvVVVvGGGVVVvvVVVvVVNEH0,
+.0hE1vGGGVVvGgGGvVvGGGvVVVVvEH0,
+.0hEvGgGGvvGGGGvvVGgGGvGGvvvVH0,
+G0hEGGGGvvVGGGvvVGGGGvGgPpVVVV0,
+vGhEGGGvvVVvPvvVVGGGvvvGvVVVVV0,
+.GvE1vvvVVvVVpVVvvvvvVVvVVVVVH0,
+.0vE1NVVVVvVVVvvGGGVVVvvvvVVEH0,
+.0hE1NvvvvGGGvVGgGGvvvvvVVVVEH0,
+.0hE1vvvVGgGGvGGGGvvVVVvVVVvVH0,
+.0hE1vVVGGGGvvGGGvvPVVGGvVVVVGG,
+.0hE1NVVPpGvvVVvvvVVpGgGvVVVVVvG
+.0hE1NWVvvvvVVVVVVVVVvGvVVVVVHV,
+.0hE1NNvvvVVVVVvGGvVVvvVVVVVEH0G
+.0hE1NvGGvVVVVVGgGvVvvVVVVNNEH0,
+.0hE1NGgGvVVVNPvGvVVVVVVVVNNEH0,
+.0hEEEvGvVVVEEEVvVVEVVVVVEEEEH0,
+.0HHHHHvVVVHHHHHHHHHHVGVHHHHHH0,
+.00000000v0000000000000vG000000,
+..,,,,,,Gv,,,,,,,,,,,,,,G,,,,,,,
+.......G........................
+........G.......................
+
+
+# ---------------------------------------------------------------- vehicles (nose up)
+# [0] faded red, [1] blue, [2] cream - dusty, flat tyres, broken glass
+@frames p_car 3 32 48
+................................ ................................ ................................
+.....0000000000000000000000..... .....0000000000000000000000..... .....0000000000000000000000.....
+....056666666666666666666650.... ....056666666666666666666650.... ....056666666666666666666650....
+...07hhRrrrrrrrrrrrrrrrrR1210,,. ...07hhdBBBBBBBBBBBBBBBdddd10,,. ...0121HEEEEEEEEEEEEEEEEH1210,,.
+...0hhHRrrrrrrrrrrrrrrrrR2x10,,. ...0hhedBBBBBBBBBBBBBBBdDDd10,,. ...02x1HEEEEEEEEEEEEEEEEH2f10,,.
+...0rRRRRRRRRRRpRRRRRRRRRRRx0,,. ...0BddddddddddbdddddddddddD0,,. ...0EHHHHHHHHHHhHHHHHHHHHHHf0,,.
+..10rRRHRRRRRRRpRRRRRRRRRRRx01,. ..10BddedddddddbdddddddddddD01,. ..10EHHeHHHHHHHhHHHHHHHHHHHf01,.
+.120rRRRRRRRRRRpRRRRRRRRRRxx021, .120BddddddddddbddddddddddDD021, .120EHHHHHHHHHHhHHHHHHHHHHff021,
+1220rRRRRRRRRRRpRRRRRRRRRRRx0221 1220BddddddddddbdddddddddddD0221 1220EHHHHHHHHHHhHHHHHHHHHHHf0221
+1220rRRRRRRHHRRpRRRRRRRRRRRx0221 1220BddddddeeddbdddddddddddD0221 1220EHHHHHHeeHHhHHHOOHHHHHHf0221
+1220rRRRRRRRRRRpRRRRRRRROORx0221 1220BddddddddddbddddddddnndD0221 1220EHHHHHHHHHHhHHOnOHHHOOHf0221
+.120rRRRRRRRRRRpRRRRRRRRRnRx021, .120BddddddddddbdddddddddNdD021, .120EHHHHHHHHHHhHHHnHHHHHnHf021,
+..10rRRRRRRRRRRpRRRRRRRRRRRx01,. ..10BddddddddddbdddddddddddD01,. ..10EHHHHHHHHHHhHHHHHHHHHHHf01,.
+...0rRRRRRRRRRRRRRRRRRRRRRRx0,,. ...0BddddddddddddddddddddddD0,,. ...0EHHHHHHHHHHHHHHHHHHHHHHf0,,.
+...0xxxxxxxxxxxxxxxxxxxxxxxx0,,. ...0DDDDDDDDDDDDDDDDDDDDDDDD0,,. ...0ffffffffffffffffffffffff0,,.
+...0rR0jjjjjjjjjjjjjjjjjj0Rx0,,. ...0Bd0jjjjjjjjjjjjjjjjjj0dD0,,. ...0EH0jjjjjjjjjjjjjjjj7j0Hf0,,.
+.0R0rR0Jjjjjjj7jjjjjjjjjj0Rx0R0, .0d0Bd0Jjjjjjjjjj1jjjjjjj0dD0d0, .0H0EH0Jjjjjjjjjjjjjjj7jj0Hf0H0,
+.000rR0jJjjjjz7z7jjjjjjjj0Rx000, .000Bd0jJjjjjj7j171jjjjjj0dD000, .000EH0jJjjjjjjjjjjjj7jjj0Hf000,
+...0rR0jjJj77z7z77jjjjjjj0Rx0,,. ...0Bd0jjJjjjjj17z77jjjjj0dD0,,. ...0EH0jjJjjjjjjjjjjz7jjj0Hf0,,.
+...0rR0jjjjjjz7z7jjjjJjjj0Rx0,,. ...0Bd0jjjjjjjjj171jjJjjj0dD0,,. ...0EH0jjjjjjjjjjj7jjJjjj0Hf0,,.
+...0rR0jjjjjj7jj7jjjjjJjj0Rx0,,. ...0Bd0jjjjjjjjjj1jjjjJjj0dD0,,. ...0EH0jjjjjjjjjj7jjjjJjj0Hf0,,.
+...0rR0jjjjj7jjjjj7jjjjJj0Rx0,,. ...0Bd0jjjjjjjjjjjjjjjjJj0dD0,,. ...0EH0jjjjjjjj7jjjjjjjJj0Hf0,,.
+...0rjRRRRRRRRRRRRRRRRRRRRjx0,,. ...0BjddddddddddddddddddddjD0,,. ...0EjHHHHHHHHHHHHHHHHHHHHjf0,,.
+...0rjrrrrrrrrRRRRRRRRRRRRjx0,,. ...0BjBBBBBBBBddddddddddddjD0,,. ...0EjEEEEEEEEHHHHHHHHHHHHjf0,,.
+...0rjrRRRRRRRRRRRRRRRRRRxjx0,,. ...0BjBddddddddddddddddddDjD0,,. ...0EjEHHHHHHHHHHHHHHHHHHfjf0,,.
+...0rjrRRRRRHHHRRRRRRRRRRxjx0,,. ...0BjBdzdddeeeddddddddddDjD0,,. ...0EjEHHHHHeeeHHHHHHHHHHfjf0,,.
+...0rjrRRRRHHHHHRRRRRRRRRxjx0,,. ...0BjBd1111111edddddddddDjD0,,. ...0EjEHHHHeeeeeHHHHHHHHHfjf0,,.
+...0rjrRRRRRHHRRRRRRRRRRRxjx0,,. ...0BjB1d0d0e1dddddddddddDjD0,,. ...0EjEHHHHHeeHHHHHHHHHHHfjf0,,.
+...0rjrRRRRRRRRRRRRRRHRRRxjx0,,. ...0BjBddddddddddddddedddDjD0,,. ...0EjEHHHHHHHHHHHHHHeHHHfjf0,,.
+...0rjrRRRRRRRRRRRRRRRRRRxjx0,,. ...0BjBddddddddddddddddddDjD0,,. ...0EjEHHHHHHHHHHHHHHHHHHfjf0,,.
+...0rjRRRRRRRRRRRRRRRRRRRxjx0,,. ...0BjdddddddddddddddddddDjD0,,. ...0EjHHHHHHHHHHHHHHHHHHHfjf0,,.
+...0rjRRRRRRRRRRRRRRRRRRRRjx0,,. ...0BjddddddddddddddddddddjD0,,. ...0EjHHHHHHHHHHHHHHHHHHHHjf0,,.
+...0rR0jjjjjjjjjjjjjjjjjj0Rx0,,. ...0Bd0jjjjjjjjjjjjjjjjjj0dD0,,. ...0EH0jjjjjjjjjjjjjjjjjj0Hf0,,.
+..10rR0Jjjjjjjjjjjjjjjjjj0Rx01,. ..10Bd0Jjjjjjjjjjjjjjjjjj0dD01,. ..10EH0Jjjjjjjjjjjjjjjjjj0Hf01,.
+.120rR0jJjjjjjjjjjjjjjjjj0Rx021, .120Bd0jJjjjjjjjjjjjjjjjj0dD021, .120EH0jJjjjjjjjjjjjjjjjj0Hf021,
+1220rR0jjjjjjjjjjjjjjjJjj0Rx0221 1220Bd0jjjjjjjjjjjjjjjJjj0dD0221 1220EH0jjjjjjjjjjjjjjjJjj0Hf0221
+1220xxxxxxxxxxxxxxxxxxxxxxxx0221 1220DDDDDDDDDDDDDDDDDDDDDDDD0221 1220ffffffffffffffffffffffff0221
+1220rRRRRRRRRRRRRRRRRRRRRRRx0221 1220BddddddddddddddddddddddD0221 1220EHHHHHHHHHHHHHHHHHHHHHHf0221
+.120rRRRRRHRRRRRRRRRRRRRRRRx021, .120BdddddeddddddddddddddddD021, .120EHHHHHeHHHHHHHHHHHHHHHHf021,
+..10rRRRRRRRRRRRRRRRRRRRRRRx01,. ..10BddddddddddddddddddddddD01,. ..10EHHHHHHHHHHHHHHHHHHHHHHf01,.
+...0rRRRRRRRRRRRRRRRRRRROnRx0,,. ...0BdddddddddddddddddddnNdD0,,. ...0EHOOHHHHHHHHHHHHHHHHOnHf0,,.
+...0rRRRRRRRRRRRRRRRRRRRRRRx0,,. ...0BddddddddddddddddddddddD0,,. ...0EOnHHHHHHHHHHHHHHHHHHHHf0,,.
+...0rRRRRRRRRRRRRRRRRRRRRRRx0,,. ...0BddddddddddddddddddddddD0,,. ...0EHHHHHHHHHHHHHHHHHHHHHHf0,,.
+...0ooRRRRRRRRRRRRRRRRRRRROO0,,. ...0ooddddddddddddddddddddnn0,,. ...0ooHHHHHHHHHHHHHHHHHHHHOO0,,.
+...0xxxxxxxxxxxxxxxxxxxxxxxx0,,. ...0DDDDDDDDDDDDDDDDDDDDDDDD0,,. ...0ffffffffffffffffffffffff0,,.
+....056666666666666666666650,... ....056666666666666666666650,... ....056666666666666666666650,...
+.....0000000000000000000000,,... .....0000000000000000000000,,... .....0000000000000000000000,,...
+......,,,,,,,,,,,,,,,,,,,,,,.... ......,,,,,,,,,,,,,,,,,,,,,,.... ......,,,,,,,,,,,,,,,,,,,,,,....
+
+@sprite p_car_burnt 32 48
+................................
+.....0000000000000000000000.....
+....034444444444444444444430....
+...01222333333333333333321210,,.
+...02242333333333333333322110,,.
+...03222222222242222222222210,,.
+..1032242222222422222222222101,.
+.12032222OO22224222222222211021,
+14503222OnO222242222222222210541
+15403222222442242222222222210451
+122032222222222422222222OO210221
+.120322222222224222222222n21021,
+..1032222222222422222222222101,.
+...03222222222222222222222210,,.
+...01111111111111111111111110,,.
+...03201111111111111111110210,,.
+.020320211111111111111111021020,
+.000320121111212111111111021000,
+...03203131313131111111110210,,.
+...03201111112121111121110210,,.
+...03201111111111111112110210,,.
+...03201111111111111111210210,,.
+...03122222222222222222222110,,.
+...03133333333222222222222110,,.
+...03132222222222222nOO221110,,.
+...03132222244422e222On221110,,.
+...031322e2444442222222221110,,.
+...03132222245222222222221110,,.
+...031322222O2222222242221110,,.
+...03132222222222222222221110,,.
+...03122222222222222222221110,,.
+...03122222222222222222222110,,.
+...03201114111411141111110210,,.
+..1032021114111411111111102101,.
+.120320121111111111111111021021,
+12203201111111111111112110210221
+14501111111111111111111111110541
+15403222222222222222222222210451
+.120322222422222222222222221021,
+..10322222222222OOn22222222101,.
+...032nO2222222On2222222On210,,.
+...03222222222222222222222210,,.
+...03222222222222222222222210,,.
+...02222222222222222222222OO0,,.
+...01111111111111111111111110,,.
+....034444444444444444444430,...
+.....0000000000000000000000,,...
+......,,,,,,,,,,,,,,,,,,,,,,....
+
+
+# the player's van: teal + white roof, hand-painted stripe, loaded roof rack
+@sprite p_van 36 56
+....................................
+.....00000000000000000000000000.....
+....0566666666666666666666666650....
+...0C7hH2323232323232323237hHCtt0,,.
+...0ChHH3232323232323232323HHHtt0,,.
+...0cCCCCCCCCCCCCCCCCCCCCCCCCCCt0,,.
+..10cCooCCCCCCCCCCCCCCCCCCCooCCt01,.
+.120cCCyooCCCCCCCCCCCCCCCooyCCCt021,
+1220cCCCCyooooCCCCCCCooooyCCCCCt0221
+1220cCCCCCCCCyoooooooyCCCCCCCCCt0221
+1220cCCCCCCCCCCCCCCCCCCCCCCCCCCt0221
+.120tttttttttttttttttttttttttttt021,
+..10cC0jjjjjjjjjjjjjjjjjjjjjj0Ct01,.
+.000cC0Jjjjjjjjjjjjjjjjjjjjjj0Ct000,
+.0C0cC0jJjjjjjjjjj2jjjjjjjjjj0Ct0C0,
+.000cC0jjJjjjjjjj2jjjjjjjjJjj0Ct000,
+...0cC0jjjjjjjjj2jjjjjjjjjjJj0Ct0,,.
+...0cC0jjjjjjjj2jjjjjjjjjjjjj0Ct0,,.
+...0cC77777777777777777777777HCt0,,.
+...0cj7hhhhhhhhhhhhhhhhhhhhhhHjt0,,.
+...0cj7h55555555555555555555hHjt0,,.
+...0cj7h3000000033h6h3006hh3hHjt0,,.
+...0cj7h3012221030rrR30RRxx3hHjt0,,.
+...0co7h3122222130rrR30RRxx3yHot0,,.
+...0cC7h3122522130rrR30RRxx3hHCt0,,.
+...0cC7h3122222130RRx30xxxx3hHCt0,,.
+...0cC7h30122210300003000003hHCt0,,.
+...0co7h3000000033hhh3hhhhh3yHot0,,.
+...0cj7h3hhhhhhhh3hhhhhhhhh3hHjt0,,.
+...0cj7h3hhhhhhhh3hhhhhhhhh3hHjt0,,.
+...0cj7h55555555555555555555hHjt0,,.
+...0co7h30000000030000000003yHot0,,.
+...0cj7h30wwwwwW030TTZTTZTT3hHjt0,,.
+...0cj7h30wNNNNW030ThTZhTZZ3hHjt0,,.
+...0cj7h30WWWWWW030hhhhhhhh3hHjt0,,.
+...0co7h30wwwwwW030ZTZhZTTT3yHot0,,.
+...0cj7h30wNNNNW030TZTThZZZ3hHjt0,,.
+...0cj7h30WWWWWN030ZZZZZZVV3hHjt0,,.
+...0cj7h30000000030000000003hHjt0,,.
+...0co7h3hhhhhhhhhhhhhhhhhh3yHot0,,.
+...0cC7h55555555555555555555hHCt0,,.
+..10cC7h3h0000hhh0000000000hhHCt01,.
+.120cC7h3h0GG0hh0bBbBbBbB00yhHCt021,
+1220co7h3h0GgG0h0BbBbBbBb003hHot0221
+1220cC7h3h0vGv0h0bBbBbBbB003hHCt0221
+1220cC7h3h0rrR0h000000000hh3hHCt0221
+1220cC7h3h00000hhhhhhhhhhhh3yHCt0221
+.120cC7h55555555555555555555hHCt021,
+..10cC7hhhhhhhhhhhhhhhhhhhhhhHCt01,.
+...0cCHHHHHHHHHHHHHHHHHHHHHHHHCt0,,.
+...0cCCCCCCCCCCCCCCCCCCCCz5zCCCt0,,.
+...0rrCCCCCCCCCCCCCCCCCCCz5zCCRR0,,.
+...0tttttttttttttttttttttttttttt0,,.
+....0566666666666666666666666650,...
+.....00000000000000000000000000,,...
+......,,,,,,,,,,,,,,,,,,,,,,,,,,....
+
+
+# ---------------------------------------------------------------- store signs
+@sprite p_sign_quickstop 64 16
+0......000000000000000000000000000000000000000000000000000000000
+.yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy2yyyyyyyyyyyyyyyyyyyyy0
+0yxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx2xxxxxxxxxxxxxxxxxxxy0
+0yRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR1RRRRRRRRRRRRRRRRRRRy0
+0yRRRRhhhRRhRRRhRhh2RRRRRRRhRRRhRRRRRhhhhRh1hhhRRhhhRRhhhhRRRRy0
+0yRRRhRxxhRhxRRhxRhxxRRRRRRhxRhRxRRRhRxxxxR2hxxxhRxxhRhxxxhRRRy0
+0yRRRhxRRhxhxRRhxRhxORRRRRRhxhRxRRRRhxRRRRRR1xRRhxRRhxhxRRhxRRy0
+0yRRRhxRRhxhxRRhxRhxORRRRRRhhRxRRRRRRhhhRRRR1xRRhxRRhxhhhhRxRRy0
+0yRRRhxhRhxhxRRhxRhxnRRRRRRhxhRRRRRRRRxxhRRRh2RRhxRRhxhxxxxRRRy0
+0yRRRhxRhRxhxRRhxRhxRRRRRRRhxRhRRRRRRRRRhxRRh1RRhxRRhxhxRRRRRRy0
+0yRRRRhhRhRRhhhRxhhhR2RRRRRhxRRhRRRRhhhhRxRRhx1RRhhhRxhxRRRRRRy0
+0yRRRRRxORxRRxxxRRxxxRRRRRRRxRRRxRRRRxxxxRRRRx2RRRxxxRRxORRRRRy0
+0yxxxxxxnxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx1xxxxxxxxOxxxxxy0
+0yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy2yyyyyyyynyyyyyy0
+0000000000000000000000000000000000000000000000000000000000000000
+.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.......
+
+@sprite p_sign_market 64 16
+0000000000000000000000000000000000000000000000000000000000000000
+0GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG0
+0GVVVVVVVVVVVVVVVVVVVVVVVVVVVVV2VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVG0
+0GvvvGGvvvvvvvvvvvvvvvvvvvvvvvv1vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvG0
+0GvvvG..vvvvvvhhhhhvhhhhvveeeeev1hhhhvhvvvhvhvvvhvveeevvhvvvhlG0
+0GvvrrrrvvvvvvhVVVVVhVVVhveVVVVV2vVVVVhVvvhVhVvvhVevVVevhVvvvVG0
+0GvrrprrRvvvvvhVvvvvhVvvhVeVvvvvh1vvvvhVvvhVhVvvhVeVvveVvhvhvGG0
+0GvrpprrRvvvvvhhhhvvhhhhvVeeeevvvhhhvvhhhhhVhVhvhVeeeeeVvvhvGvG0
+0GvrrrrRxvvvvvhVVVVvhVhVVveVVVVvvvVVhvhVVVhVhVhVhVeVVVeVvvhvGvG0
+0GvvRRRxvvvvvvhVvvvvhVvhvveVvvvvvvvvhVhVvvhVhhvhhVeVvveVvvhVvvG0
+0GvvvvvvvvvvvvhVvvvvhVvvhveeeeevhhhhvVhVvvhVhVVvhVeVvveVvvhVvvG0
+0GvvvvvvvvvvvvvVvvvvvVvvvVvVVVVVvVVVVvvVvvvVvVvvvVvVvvvVvvvVvvG0
+0GvZvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvGvGvG0
+0GZGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGvGVGGG0
+0000000000000000000000000000000000000000000000000000000000000000
+.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+@sprite p_sign_hardware 64 16
+0000000000000000000000000000000000000000000000000000000000000000
+03333333333333333333333333333333333333333333333333O3333333333330
+03y12222222222222222222222222222222222222222222222n222222222y130
+031y222222222222222222222222222222222222222222222222222222221y30
+03y122oooo22o222o2ooo2o22222oooo222222oooo22ooo2OOOOO2ooooo2y130
+031y22oOOOo2oO22oO2oOOoO2222oOOOo22222oOOOo22oOO2OOOOOoOOOOO1y30
+03y122oO22oOoO22oO2oO2oO2222oO22oO2222oO22oO2oO222OO22oO2222y130
+031y22oooo2OoO22oO2oO2oO2222oO22oOooo2oooo2O2oO222OO22oooo221y30
+03y122oOOOo2oO22oO2oO2oO2212oO22oO2OOOoOoOO22oO222OO22oOOOO2y130
+031y22oO22oOoO22oO2oO2oO2202oO22oO2222oO2o222oO222OO22oO22221y30
+03y122oooo2O2ooo2Oooo2ooo1o2oooo2O2222oO22o2ooo222OO22ooooo2y130
+031y222OOOO222OOO22OOO2O0OOO2OOOO222222O222O2OOO222O222OOOOO1y30
+03y122222222222222222222122222222222222222222222222222222222y130
+033333333333O333333333313333333333333333333333333333333333333330
+0000000000000000000000000000000000000000000000000000000000000000
+.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+@sprite p_sign_pharmacy 64 16
+0000000000000000000000000000000000000000000000000000000000000000
+0BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB0
+0BEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEB0
+0BEEEEGGEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEHEEEB0
+0BEEEEGGEEEEEEEBEEEBEBBBBBEBBBBEEBBBEJEEEJEEBBBEEBBBBEEBBBBeHEB0
+0BEEGGGGGGEEEEEBBEBBEBEEEEEBEEEBEEBEEJJEJJEBEEEBEBEEEBEEEBEEeEB0
+0BEEGgGGGvEEEEEBEBEBEBEEEEEBEEEBEEBEEJEJEJEBEEEBEBEEEBE2EBEEEEB0
+0BEEEEGvEEEEEEEBEBEBEBBBBEEBEEEBEEBEEJEJEJEBBBBBEBBBBEEE1BEEEEB0
+0BEEEEGvEEEEEEEBEEEBEBEEEEEBEEEBEEBEEJEEEJEBEEEBEBEBEEEE2BEEEEB0
+0BEEEEEEEEEEEEEBEEEBEBEEEEEBEEEBEEBEEJEEEJEBEEEBEBEEBEEEE1EEEEB0
+0BEeEEEEEEEEEEEBEEEBEBBBBBEBBBBEEBBBEJEEEJEBEEEBEBEEEBEEEB1EEEB0
+0BeeEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEeEEEEEEEEEEEEEEEEE2EEEB0
+0BeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeB0
+0BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..0
+0000000000000000000000000000000000000000000000000000000000000000
+.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+@sprite p_sign_megamart 80 16
+00000000000000000000000000000000000000000000000000000000000000000000000000000000
+0BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB2BBBBBBBBBBBBBBBBBB0
+0BDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD1DDDDDDDDDDDDDDDDB0
+0BddddddydddddddddddyyddyydyyyyyyddyyyydddyyyyddyyddyyddYYYYddyyyyyddyyyyyydddB0
+0Bddddy.y.ydddddddddyyydyyYyyyyyyYyyyyyydyyyyyydyyydyyYYYYYYYdyyyyyydyByyyyYddB0
+0BdddddyyyddddddddddyyyyyyYyyYYYYYyyYYYYYyyYYyyYyyyyyyYYYYYYYYyyYYyyYdYByYYYddB0
+0BddyyyXyyydddddddddyyYyYyYyyYddddyyYddddyyYdyyYyyYyYyYYYYdYYYyyYdyyYddy1YddddB0
+0BdddddyyyddddddddddyyYdYyYyyyyyddyyYyyydyyyyyyYyyYdYyYYYYYYYYyyyyyYYddy2YddddB0
+0Bddddy.y.ydddddddddyyYddyYyyYYYYdyyYdyyYyyyyyyYyyYddyYYYYYYYYyyyyYYdddyy1ddddB0
+0BddddddydddddddddddyyYddyYyyYddddyyYdyyYyyYYyyYyyYddyYYYYYYYYyyYyyddddyy1ddddB0
+0BddddddddddddddddddyyYddyYyyyyyydyyyyyyYyyYdyyYyyYddyYYYYdYYYyyYdyydddyyY2dddB0
+0BddddddddddddddddddyyYddyYyyyyyyYdyyyyYYyyYdyyYyyYddyYYYYdYYYyyYdyyYddyyY1dddB0
+0BdddddddddddddddddddYYdddYdYYYYYYddYYYYddYYddYYdYYdddYdYYddYYdYYddYYdddYYddddB0
+0BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBOBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB0
+000000000000000000000000000000000000000000000n0000000000000000000000000000000000
+.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+@sprite p_sign_mall 80 16
+00000000000000000000000000000000000000000000000000000000000000000000000000000000
+02222222222222222222222222222232222222222222222222222222222222222222222222222220
+02000000000000000000000000000004000000000000000000000000000000000000000000000020
+02111111111111111111111111111113111111111111111111111111111111111111111111111120
+021cpppp111ppp11QQQQ111ppp11pppp41ppp11QQQQ1QQQQQ1111p111p11ppp11311111p1111C120
+021cpmmmp1p1mmp1QmmmQ1p1mmp1pmmmp11pmmQ1mmmmQmmmmm111pp1ppmp1mmp13m1111pm111C120
+021cpm11pmpm11pmQm11Qmpm11pmpm11pm1pm1Qm1111Qm1111111pmp1pmpm11pm3m1111pm111C120
+021cpppp1mpppppmQQQQ1mpppppmpm11pm1pm11QQQ11QQQQ11111pmpmpmpppppm3m1111pm111C120
+021cpmmmm1pmmmpmQmQmm1pmmmpmpm11pm1pm111mmQ1Qmmmm1111pm1mpmpmmmpm3m1111pm111C120
+021cpm1111pm11pmQm1Q11pm11pmpm11pm1pm11111QmQm1111111pm11pmpm11pm3m1111pm111C120
+021cpm1111pm11pmQm11Q1pm11pmpppp1mppp1QQQQ1mQQQQQ1111pm11pmpm11pm333331pppppC120
+02111m11111m111m1m111m1m111m1mmmm11mmm1mmmm11mmmmm1111m111m1m111m1mmmmm1mmmmm120
+02000000000000000000000000000000000000000000000000000000000000000000000000000020
+02222222222222222222222222222222222222222222222222222222222222222222222222222220
+00000000000000000000000000000000000000000000000000000000000000000000000000000000
+.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
+# ---------------------------------------------------------------- free props (pivot centre, drawn facing right)
+@sprite p_cart 24 16
+........................
+.rr56666666.............
+.rR533..4..666666.......
+.rR533..4..4..4..666666.
+.rR53344444444444444445,
+.rR533..4..4..4..4..4.5,
+.rR533..4..4..4..4..4.5,
+.rR53344444444444444445,
+.rR533..4..4..4..4..4.5,
+.rR533..4..4..4..4..4.5,
+.rR53344444444444444445,
+.rR533..4..4..4..4..4.5,
+.rR533..4..4..4..333333,
+.rR533..4..333333,,,,,,.
+.Rx53333333,,,,,,.......
+...,,,,,,,,.............
+
+@sprite p_cart_fallen 24 16
+........................
+........................
+..0.....................
+.0r00000000000000000000.
+.0rR66666666666666666650
+.0rR4.4.4.4.4.4.4.4.4.40
+.0Rx44444444444444444440
+..0R4.4.4.4.4.4.4.4.4.40
+...04444444444444444440,
+....0.4.4.4.4.4.4.4.40,,
+.....0555555555555550,,.
+.....0333333333333330,..
+......00000000000000,...
+.....0110.......0110....
+.....0150,......0150,...
+......00,........00,....
+
+@sprite p_chair 12 12
+............
+.000000000..
+.0O0ooooo0..
+.0O0ooooOO0.
+.0O0oooooO0.
+.0O0oooooO0,
+.0O0oooooO0,
+.0O0ooooOO0,
+.0x0OOOOOO0,
+.000000000,,
+..,,,,,,,,,.
+............
+
+@sprite p_door 16 4
+0600000000000y00
+05wwwwwwwwwwwwW0
+05WWWWWWWWWWWWN0
+0600000000000y00
+
+@sprite p_door_glass 16 4
+0zzzzzzzzzz6zzz0
+0z~~~;~~~~~~~;J0
+0z~~~~;~~~~~~~J0
+0JJJJJJJJJJ6JJJ0
+
+@sprite p_tire 12 12
+....0000....
+..00323300..
+.0332112330.
+.0321..1220.
+03211..1122,
+0321....1220
+0321....1220
+.0321..1220,
+.0322112210,
+..00222100,,
+....0000,,,.
+.....,,,,...
+
+@frames p_loot_glint 4 8 8
+........ ........ ...y.... ........
+........ ...y.... .y.X.y.. ........
+........ ...X.... ..yXy... ..y.y...
+...X.... .yX8Xy.. yXX8XXy. ...X....
+..XyX... ...X.... ..yXy... ..y.y...
+...X.... ...y.... .y.X.y.. ........
+........ ........ ...y.... ........
+........ ........ ........ ........
+
+
+# trees grow through the asphalt: canopy with translucent cast shadow
+@frames p_tree 2 48 48
+................................................ ................................................
+................................................ ................................................
+................................................ ................................................
+.................G...vvv........................ ................................................
+................GgVGGGvvV....................... ................T...............................
+.................VGgGGvVVV...................... ...............TlVvTTT..........................
+..............vvvGGGGvvVVVG.vvv................. ................VvTlTTv.........................
+............GGGvvGGGvvVVVGgVvvvV................ ...............vvTTTTvvV........................
+...........GgGGvVvvvvVVV::VvvVVVV............... ..........vvTTTvVTTTvvVVvvv.....................
+..........GGGGvvVvvVVVVGGGvvvvVVV............... .........vvTlTGvvvvvvVVvvvvV....................
+.........vGGGvvVVVVvVVGgGGvGvvVV:,.............. ........vvTTTTvvVvvVVVVvvVVVV...................
+........vvvvvvVGGG:VVGGGGvvVvvVV::,............. ........vVTTTvvVVVvVVVvVVVVVV...................
+......GvvvvvVVGgGGv::GGGvvVVGGvV:vvv............ ......T..vvvvvVVTTTVV::VVVVV:,..................
+.....GgVVVVvVGGGGvvV::vvvVVGgGvVvvGvV........... .....TlV.vvvVVVTlTTv:::TTTV:::,.................
+......V.GGGVVGGGvvVVV,vVVVVvGvVVvGgVVV.......... ......V.TTTvVVTTTTvvVvTlTTv::::,................
+.......GgGGv::vvvVVVV.vvvvVVvVVvvvVVVV.......... .......TlTTvYVTTTvvVVTTTTvvVvvv,................
+......GGGGvvV:vVVVVVGGGGvvVV::vGvvVVVvGv........ ......TTTTvvVVVvvvVVGgTTvvVVvvvV................
+......GGGvvVV:vVVVVGgGGvvvVV:vvvvvVVvGvvV....... .....vTTTvvVVVvvVVVVVVvvvVVvvVVVV...............
+......vvvvVVVV:VVVGGGGvvVVVV:vvvVVVVVvvVV....... .....vVvvvVVVVvvvVVVVvvVVVVVVVVVV...............
+.....vvvVVVGGG,.VVGGGvvVGGv:::GGvVVvvVVV,....... ......VvVVVVTTTVvVVV:vvvVVVVVVVV:,..............
+.....vVVVvGgGGvv.::vvvVGgGvVvGgGvVvvvvV:::,..... .......VVvVGlTTvVVVv::VvVVV:VVV:::,.............
+......VVVGGGGvvVV:vGVVVvGvVVvvGvVVvvVVVV:::,.... ........:VTTTTvvVvvTTv:VVVvTTv:::::,............
+.....vGvVGGGvvVVVvvvvvVVvVVvvvvVVvVVVVVV:::,.... ........:vTTTvvVVvTlTvVvvvTlTvV::vvv............
+....vGvvV:vvvVVGGvvvVVVV::vGvvVVV:VVVVV:::,..... ........vvvvvvVVVVvTvVVvvVvTvVV:vvvvV...........
+....VvvVVvvVVVGgGvVvVVV::vvvvvVV:::VVV:::,...... ........vVVvVVVvVVVvVVvvVVVvVVvvvTVVVV..........
+.....VVVvvvvvvvGvVVVVVvV:vvvVVVV::::::::::,..... ........TVVvvvVVVVVvvvvvVVVvTvvVTlVVVV..........
+.......vvvvvvVVvVVvvGGvVV:VvVVV::vvv::::::,..... .....vTTlVVVVvVVTTvvvvVVVVvvvvvVVVVVV:,.........
+.......vVGVVvVVV::vGgGvVvvvVVV::vvvvV::::,...... ....vTvvV..::VVTlTvVVvVVVTTvvVVVTTvV::vTv.......
+.......,GgVVVVV::vvvGvVVvvvV:::vvvVVVV,,,....... ....VvvVV..:vvvvTvVVvVVVTlTYVVVTlTvV:vTvvV......
+........,VVV::::vGvvvVVvvVVVV::vVVVVVV.......... .....VVV...vvvVVvVVVVVVVvTvVVVVvTvVV:VvvVV......
+..........::::vvvvvvVVvVvvvVV:::VVVvGv,......... ........:::vVVVVVV:VVVVVvvVVVVvvvVVV::VVV.......
+..........,::vvvvvVVVV:vGvvVvvv:,VvGvvV,........ .......:::::VVVVV:::VVVvTvvVVvTvvVVVV:,..::,....
+...........,vvvVVvVVV:vvvvvVVvvV..VvvVV:,....... .......,:::,.VVV::::::vvvvvVVvvvvVVVV:,.::::,...
+............vVVVVVVV:vvvvVVVVVVVV.,VVV::,....... ........,,,...:::::::,vvvVVVVvvVVVVvvv,.,:::,...
+.............VVVVV::vvvVvVVVVVVVV..,::::,....... ..............,:::::,.,VvVVVvVvVVVvvvvV..,,,....
+..............VVV::vvvVVVVVVVVVV:,..,::::,...... ...............,:::,...:VVVVVVVVVvvvVVVV........
+...............::::vVVVVVV::VVV:::,..,:::,...... ................,,,..vTvvVVVVVV::vVVVVVV........
+...............,:vGvVVVVVvGv:::::::,..,,,....... ....................vTvvVVVVVV:vvvVVVVV:,.......
+................vGvvVVVVvGvvV::::::,............ ....................VvvVV.VVV:vvvvVVVvTv:,......
+................VvvVV.::VvvVV,,:::,............. .....................VVV...::vvvVVVVvTvvV:,.....
+.................VVV..:::VVV,..,,,.............. ........................:::::vVVVVVVVvvVV:,.....
+....................::::::::::,................. .......................:::::,:VVVVV::VVV:,......
+...................:::::,,,::::,................ .......................,:::,.,,VVV::::::::,.....
+...................,:::,...,:::,................ ........................,,,.....:::::::::::,....
+....................,,,.....,,,................. ................................,:::::,,:::,....
+................................................ .................................,:::,..,,,.....
+................................................ ..................................,,,...........
+................................................ ................................................
+
+@sprite p_deadtree 32 32
+................................
+..............W.................
+...W..........nW......W.........
+....W...W.....nW,....W...W......
+.....W..W.....nN,,..W...W.......
+..W...WnW.,....nN,.W..WW...,....
+...WW..nW.,....nN,W..W,...,.....
+....,WW.nN,....nNW,WW,..,,.W....
+.....,,.nNN....nNnW.,..,..W.....
+.......,,nNN...nNN,,.,,..W...,..
+..........nNN..nN,,,,.WWW...,...
+..WW.......nNNnN.,,nNNN....,....
+....WWW.....nnNN.nNN....,,,...W.
+....,,.WWW..nWWnNN...,,,,...WW..
+......,,,.WnnWWWNN.,,,....WWW...
+.........,,,nWnWWNNnnnnnnNW...,,
+.....WWWWnnnnWnWWNNNNNNNN...,,,.
+..WWW.......nWWWNNNN,,,,,,,WWW..
+.......,,,,,,NNNNNNNN,,,WWW.....
+....,,,.....nN,,N,NNNNWW.....,,,
+...........nN..,N,,,NN,...,,,...
+..........nN..,,N.,.,NN,,,......
+....W....nN..,,.N.,...NN........
+.....W..nN..,,..N.,....NN.......
+......WnN..,,...NW,.....NNW.....
+.......N..,,....N.W......NW.W...
+......W.,,,.....N.,W......W,,...
+.....W...,.....W..,.W....W.,W.,.
+....W...,.....W...,..,...W..,...
+.......,.........,....,....,..,.
+......,.........,..........,....
+................................

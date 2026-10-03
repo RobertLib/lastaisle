@@ -1,0 +1,719 @@
+# LAST AISLE - tiles.art  (floors, wall autotile templates, glass, overlays)
+# Light from top-left. Floors kept dark/desaturated so actors pop.
+
+# ---------------------------------------------------------------- asphalt
+@frames t_asphalt 4 16 16
+aaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaa
+aaAaaaaaa2aaaaaa aaAaaaaaa2aaaaaa aaAaaaaaa2aaaaaa aaAaaaaaa2aaaaaa
+aaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaa
+aaaaa2aaaaaaaAaa aa21a2aaaaaaaAaa aaaaa2aGaaaaaAaa aaaaa2aaaaaaaAaa
+aaaaaaaaaAaaaaaa aaaA1aaaaAaaaaaa aaaaaaaavaGaaaaa aaaaaaaaaaaaaaaa
+aAaaaaaaaaaa2aaa aAaa1Aaaaaaa2aaa aAaaGaaGvGvaaaaa aAaaaa2222aa2aaa
+aaaaaaaaaaaaaaaa aaaaa11aaaaaaaaa aaaaavaGvvaaGaaa aaaa22111122aaaa
+aaaa2aaaaAaaaaaa aaaa2aA1aaaaaaaa aaaa2GvVGvGvaaaa aaa2110000112aaa
+aaaaaaaaaaaaaaaa aaaaaaaa1aaaaaaa aaaaaavVvVvaaaaa aaa210000001Aaaa
+aaaaaaaAaaaaaaAa aaaaaaaaA11aaaAa aaaaGvGVVvGGaaAa aaa2100A00012aaa
+aaAaaaaaaaaaaaaa aaAaaaaa1aA1aaaa aaAaaaVvVvaaaaaa aaaa21000011Aaaa
+aaaaaaaaaa2aaaaa aaaaaaa1AaaA12aa aaaaaaa1V22aaaaa aaaaa2111AAAaaaa
+aaaaa2aaaaaaaaaa aaaaa2a1aaaaaA1a aaaaa2a1aaaaaaaa aaaaa2aaAAaaaaaa
+aaaaaaaaaaaaaAaa aaaaaa1Aaaaaaaaa aaaaaa1aaaaaaAaa aaaaaaaaaaaaaAaa
+aAaaaaaaAaaaaaaa aAaaaaaaAaaaaaaa aAaaaaaaAaaaaaaa aAaaaaaaAaaaaaaa
+aaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaa
+
+@frames t_asphalt_line 2 16 16
+aaaaaaa55aaaaaaa aaaaaaa55aaaaaaa
+aaAaaaa55aa2aaaa aaAaaaa5Aaa2aaaa
+aaaaaaa55aaaaaaa aaaaaaaA5aaaaaaa
+aaaaa2a5Aaaaaaaa aaaaa2a55aaaaaaa
+aaaaaaa55aaaaAaa aaaaaaa5AaaaaAaa
+aAaaaaa55aaaaaaa aAaaaaaAAaaaaaaa
+aaaaaaa55aaa2aaa aaaaaaa55aaa2aaa
+aaaa2aa55aaaaaaa aaaa2aa5Aaaaaaaa
+aaaaaaaA5aaaaaaa aa1aaaa11aaaaaaa
+aaaaaaa55aaaaaAa aaA11a1AA11aaaAa
+aaAaaaa55aaaaaaa aaAaa1aA5aA11aaa
+aaaaaaa55aa2aaaa aaaaaaa55aaaA2aa
+aaaaa2a55aaaaaaa aaaaa2aA5aaaaaaa
+aaaaaaa5Aaaaaaaa aaaaaaa5Aaaaaaaa
+aAaaaaa55aaaaaaa aAaaaaa55aaaaaaa
+aaaaaaa55aaaaaaa aaaaaaa55aaaaaaa
+
+@rot t_asphalt_hline t_asphalt_line 90
+
+@frames t_curb 2 16 16
+EEEEEEEEEEEEEEEf EEEEEEEEEE2aaEEf
+eeeeeeeeeeeeeeef eeeeeeeeef1aaeef
+eeeeeEeeeeeeeeef eeeeEeeeef2aAeef
+eeeeeeeeeeefeeef eeeeeeeeeff2eeef
+fffffffffffffff2 fffffffffffffff2
+1121112111211111 11211G1G1121111v
+aaaaaaaaaaaaaaaa aaaaaGvGaaaaaaGa
+aaAaaaaaaa2aaaaa aaAaaavaaa2aaaaa
+aaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaa
+aaaaa2aaaaaaaAaa aaaaa2aaaaaaaAaa
+aaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaa
+aAaaaaaaaAaaaaaa aAaaaaaaaAaaaaaa
+aaaaaaaaaaaa2aaa aaaaaaaaaaaa2aaa
+aaaa2aaaaaaaaaaa aaaa2aaaaaaaaaaa
+aaaaaaaaaaaaaAaa aaaaaaaaaaaaaAaa
+aaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaa
+
+# ---------------------------------------------------------------- sidewalk
+@frames t_sidewalk 3 16 16
+eeeeeeeeeeeeeeef eeeee2eeeeeeeeef eeeeeeeeeeeeeeev
+eeeeeeeeeeeeeeef eeeeef2eeeeeeeef eeeeeeeeeeeeeeeG
+eeeeeeefeeeeeeef eeeeeee2eeeeeeef eeeeeeefeeeeeeev
+eeeeeeeeeeeeeeef eeeeeee2feeeeeef eeeeeeeeeeeeeeef
+eeefeeeeeeeeeeef eeefeeeef2eeeeef eeefeeeeeeeeeeef
+eeeeeeeeeeeefeef eeeeeeeee2eeefef eeeeeeeeeeeefeef
+eeeeeeeeeeeeeeef eeeeeeeeef22eeef eeeeeeeeeeeeeeef
+eeeeeeeeeeeeeeef eeeeeeeeeeef2eef eeeeeeeeeeeeeeef
+eeeeeeefeeeeeeef eeeeeeefeeeee2ef eeeeeeefeeeeeeeG
+eeeeeeeeeeeeeeef eeeeeeeeeeeeef22 eeeeeeeeeeeeeeGv
+eefeeeeeeeeeeeef eefeeeeeeeeeeeef eefeeeeeeeeeeeev
+eeeeeeeeeeefeeef eeeeeeeeeeefeeef eeeeeeeeeeefeeeV
+eeeeeeeeeeeeeeef eeeeeeeeeeeeeeef eeeeeeeeeeeeeeGv
+eeeeefeeeeeeeeef eeeeefeeeeeeeeef eeeeefeeeeeeeeev
+eeeeeeeeeeeeeeef eeeeeeeeeeeeeeef eeeeeeeeeeeeGeGv
+ffffffffffffffff ffffffffffffffff fffvGfffffGvvGvV
+
+# ---------------------------------------------------------------- grass
+@frames t_grass 4 16 16
+ZZZZZZZZZZZZZvZZ ZZZZZZZZZZZZZvZZ ZZZZZZZZZZZZZvZZ ZZZZZZZZZZZZZvZZ
+ZZvZZZZZZZZZZZZZ ZZvZZZZZZZZZZZZZ ZZvZZZZZZZZZZZZZ ZZvZZZZZZZZZZZZZ
+ZZVGZZZZZvZZZZZZ ZZVGZZZZZvZZZZZZ ZZVGZZZZZvZZZZZZ ZZVGZZZZZvZZZZZZ
+ZZZVZZZZGVZvZZZZ ZZZVZZZZGVZvZZZZ ZZZVZZZZGVZvZZZZ ZZZVZZZZGVZvZZZZ
+ZZZZZvZZVZZVZZZZ ZZZZZvZZVZZVZZZZ ZZZZZvZZVZZVZZZZ ZZZZZvZZVZZVZZZZ
+ZZZZvvZZZZZZZZZZ ZZZZvvZTZZZZZZZZ ZZZZvGZZZGZZGZZZ ZZZZvvZ55ZZZZZZZ
+ZvZZZZZZZZZZZGZZ ZvZZZZTfZZTZZGZZ ZvZZZZvZvZvZvZZZ ZvZZZZZ5444ZZGZZ
+ZVZGZZZZvZZZZVvZ ZVZGZZfZTZfZZVvZ ZVZGZGvvGvGvvGZZ ZVZGZZ54443VZVvZ
+ZZZVZZZZZZZZZZVZ ZZZVZZZZfZZZZZVZ ZZZVZZvVvVvVvZVZ ZZZVZZ44333VZZVZ
+ZZZZZZvZZZZZZZZZ ZZZZZTZZZZTZZZZZ ZZZZZZZVVVVVZZZZ ZZZZZZV333VVZZZZ
+ZZZZZGVZvZZZZZZZ ZZZZZfTZvZfTZZZZ ZZZZZGvZVZVZvGZZ ZZZZZGZVVVZZZZZZ
+ZvZZZVZZVZZZvZZZ ZvZZZZfZVZZfvZZZ ZvZZZVZZZZZZZVZZ ZvZZZVZZVZZZvZZZ
+ZZZZZZZZZZZZvvZZ ZZZZZZZZZZZZvvZZ ZZZZZZZZZZZZvvZZ ZZZZZZZZZZZZvvZZ
+ZZZZZZZZZZGZZZZZ ZZZZZZZZZZGZZZZZ ZZZZZZZZZZGZZZZZ ZZZZZZZZZZGZZZZZ
+ZZZvZZZZZGVZZZZZ ZZZvZZZZZGVZZZZZ ZZZvZZZZZGVZZZZZ ZZZvZZZZZGVZZZZZ
+ZZZVZZZZZVZZZZZZ ZZZVZZZZZVZZZZZZ ZZZVZZZZZVZZZZZZ ZZZVZZZZZVZZZZZZ
+
+# ---------------------------------------------------------------- dirt
+@frames t_dirt 3 16 16
+ffffffffffffffff ffffffffffffffff ffffffffffffffff
+fffffffffffNffff fffffffffffNffff fffffffffffNffff
+ffeNffffffffffff ffeNffffffffffff ffeNffffffffffff
+ffffffffffffffff ffffffffffffffff ffffffffffffffff
+ffffffffffefffff ffffffEeffefffff ffffffffffefffff
+fNffffffffNfffff fNfffeeNffNfffff fNfffffGffNfffff
+ffffffefffffffff ffffffNNffffffff ffffGffvfGffffff
+fffffffNffffffNf fffffffffffffeff fffffvfvvfffffNf
+ffffffffffffffff ffffffffffffffNf ffffGvvVvvGfffff
+ffffffffffffffff ffffffffffffffff fffffNvVvNffffff
+ffNfffffffffefff ffNfffEffeffffff ffNfffNNNfffefff
+ffffffffffffNfff fffffffNfNffffff ffffffffffffNfff
+fffffNffWfffffff fffffNfffffffeEf fffffNffWfffffff
+ffffffffNfffffff ffffffffffffeeNf ffffffffNfffffff
+fffeffffffffffNf fffeffffffffNNff fffeffffffffffNf
+ffffffffffffffff ffffffffffffffff ffffffffffffffff
+
+# ---------------------------------------------------------------- linoleum
+@frames t_lino 4 16 16
+eeeeeeeejjjjjjjj eeeeeeeejjjjjjjj eeeeeeeejjjjjjjj eeeeeeeejjjjjjjj
+eeeeeeeejjjjjjjj eeeeeeeejjjjjjjj eeeeeeeejjjjjjjj eeeeeeeejjjjjjjj
+eeeeeeeejjjjjJjj eeeeeeeejjjjjJjj eeeeeeeejjjjjJjj eeeeeeeejjjjjJjj
+eefeeeeejjjjjjjj eefeeeeejjjjjjjj eefeeeeejjjjjjjj eefeeeeejjjjjjjj
+eeefeeeejjjjjjjj eeefeeeejjjjjjjj eeefeeeejjjjjjjj eeefeeeejjjjjjjj
+eeeeeeeejjJjjjjj eeeeeee2jjJjjjjj eeeeeeeejjJjjjjj eeeeeeeejjJjjjjj
+eeeeeeeejjjjjjjj eeeeee2fjjjjjjjj eeeeeeeejjjjjjjj eeeeeeeejjjjjjjj
+eeeeeeeejjjjjjjj eeeee2feJjjjjjjj eeeeeeeejjjjjjjj eeeeeeeejjjjjjjj
+jjjjjjjjeeeeeeee jjjj1JjjEeeeeeee jjjjjjjj1222feee jjjjjjjjeeeeeeee
+jjjjjjjjeeeeeeee jjj1jjjjeeeeeeee jjjjjjjj2NWNfeee jjjjjjjjeeeffeee
+jjjjJjjjeeeeeefe jjj1JjjjeeeeeefE jjjjJjjj2WNWeeee jjjjJjjjeeffffee
+jjjjjjjjeeeeefee jj1jjjjjeeeeefee jjjjjjjjfffeeeee jjjjjjjjefffffee
+jjjjjjjjeeeeeeee jjj1jjjjeeeeeeee jjjjjjjjeeeeeeee jjjjjjjjeeffffee
+jJjjjjjjeeeeeeee jJjj1jjjeeeeeeee jJjjjjjjeeeeeeee jJjjjjjjeeeffeee
+jjjjjjjjeeefeeee jjjjjjjjeeefeeee jjjjjjjjeeefeeee jjjjjjjjeeefeeee
+jjjjjjjjeeeeeeee jjjjjjjjeeeeeeee jjjjjjjjeeeeeeee jjjjjjjjeeeeeeee
+
+# ---------------------------------------------------------------- white tile
+@frames t_whitetile 3 16 16
+iiiJiiiJiiiJiiiJ iiiJiiiJiiiJiiiJ iiiJiiiJiiiJiiiJ
+iiiJiiiJiiiJiiiJ iiiJiiiJiiiJiiiJ iiiJiiiJiiiJiiiJ
+iiiJiiiJiiiJiiiJ iiiJiiiJiiiJiiiJ iiiJiiiJiiiJiiiJ
+JJJJJJJJJJJJJJJJ JJJJJJJJJJJJJJJJ JJJJJJJJJJJJJJJJ
+iiiJzzzJiiiJiiiJ iiiJzzzJiii2iiiJ iiiJzzzJ111JiiiJ
+iiiJzziJiiiJiiiJ iiiJzziJii2JiiiJ iiiJzziJ12fJiiiJ
+iiiJziiJiiiJiiiJ iiiJziiJi2iJiiiJ iiiJziiJ1ffJiiiJ
+JJJJJJJJJJJJJJJJ JJJJJJJJ2JJJJJJJ JJJJJJJJJJJJJJJJ
+iiiJiiiJiiiJiiiJ iiiJiii2iiiJiiiJ iiiJiiiJiiiJiiiJ
+iiiJiiiJiiiJiiiJ iiiJii2JiiiJiiiJ iiiJiiiJiiHJiiiJ
+iiiJiiiJiiiJiiiJ iiiJi2iJiiiJiiiJ iiiJiiiJiHHJiiiJ
+JJJJJJJJJJJJJJJJ JJJJJ2JJJJJJJJJJ JJJJJJJJJJJJJJJJ
+iiiJiiiJiiiJzzzJ iiiJiiiJiiiJzzzJ iiiJiiiJiiiJzzzJ
+iiiJiiiJiiiJzziJ iiiJiiiJiiiJzziJ iiiJiiiJiiiJzziJ
+iiiJiiiJiiiJziiJ iiiJiiiJiiiJziiJ iiiJiiiJiiiJziiJ
+JJJJJJJJJJJJJJJJ JJJJJJJJJJJJJJJJ JJJJJJJJJJJJJJJJ
+
+# ---------------------------------------------------------------- carpet
+@frames t_carpet 2 16 16
+DDDDDDDdDDDDDDDd DDDDDDDdDDDDDDDd
+DDDdDDDDDDDdDDDD DDDdDDDDDDDdDDDD
+DdDDDDDDDdDDDDDD DdDDDDDDDdDDDDDD
+DDDDDdDDDDDDDdDD DDDDDdDqqDDDDdDD
+DDDDDDDdDDDDDDDd DDDDDqq11qqDDDDd
+DDDdDDDDDDDdDDDD DDDdq11111qDDDDD
+DdDDDDDDDdDDDDDD DdDDq111111qDDDD
+DDDDDdDDDDDDDdDD DDDDDq11111qDdDD
+DDDDDDDdDDDDDDDd DDDDDDqq11qDDDDd
+DDDdDDDDDDDdDDDD DDDdDDDDqqDdDDDD
+DdDDDDDDDdDDDDDD DdDDDDDDDdDDDDDD
+DDDDDdDDDDDDDdDD DDDDDdDDDDDDDdDD
+DDDDDDDdDDDDDDDd DDDDDDDdDDDDDDDd
+DDDdDDDDDDDdDDDD DDDdDDDDDDDdDDDD
+DdDDDDDDDdDDDDDD DdDDDDDDDdDDDDDD
+DDDDDdDDDDDDDdDD DDDDDdDDDDDDDdDD
+
+# ---------------------------------------------------------------- mall
+@frames t_mall 4 16 16
+jjjeeeeeeeeeeejj jjjeeeeeeeeeeejj jjjeeeeeeeeeeejj jjjeeeeeeeeeeejj
+jjHHHHHHHHHHHHHj jjHHHHHHHHHHHHHj jjHHHHHHHHHHHHHj jjHHHHHHHHHHHHHj
+jHHHHHHHHHHHHHHH jHHHHHHHHHHHHHHH jHHHHHHHHHHHHHHH jHHHHHHHHHHHHHHH
+eHHEHHHHHHHHHHHH eHHHHHHHHHHHHEHH eHHHHHHHHHHHf2HH eHHHHHHHHHHHHHHH
+eHHHEHHHHHHHHHHH eHHHHHHHHHHHEHHH eHHHHHHHHHHf2HHH eHHHHHHHHHHHHHHH
+eHHHHEEHHHHHHHHH eHHHHHHHHHeEHHHH eHHHHHHHHHHe2HHH eHHHHHHHHHHHHHHH
+eHHHHHHeHHHHHHHH eHHHHHHHEeHHHHHH eHHHHHHHHHf2HHHH eHHHHHHHHHHHHHHH
+eHHHHHHHeEHHHHHH eHHHHEEeHHHHHHHH eHHHHHHHHf2eHHHH eHHHHHHHHHHHHHHH
+eHHHHHHHHHEEHHHH eHHHEHHHeHHHHHHH eHHHHHHHe2HHHHHH eHHHHHHHHHHHHHHH
+eHHHHHHHHHHHeHHH eHHEHHHHHeHHHHHH eHHHHHHf2HHHHHHH eHHHHHHHHHHHHHHH
+eHHHHHHHHHHHHEHH eHHHHHHHHHEHHHHH eHHHHHHe2HHHHHHH eHHHHHHHHHHHHHHH
+eHHHHHHHHHHHHHHH eHHHHHHHHHHHHHHH eHHHHHf2HHHHHHHH eHHHHHHHHHHHHHHH
+eHHHHHHHHHHHHHHH eHHHHHHHHHHHHHHH eHHHH2eHHHHHHHHH eHHHHHHHHHHHHHHH
+eHHHHHHHHHHHHHHH eHHHHHHHHHHHHHHH eHHHHHHHHHHHHHHH eHHHHHHHHHHHHHHH
+jHHHHHHHHHHHHHHH jHHHHHHHHHHHHHHH jHHHHHHHHHHHHHHH jHHHHHHHHHHHHHHH
+jjHHHHHHHHHHHHHj jjHHHHHHHHHHHHHj jjHHHHHHHHHHHHHj jjHHHHHHHHHHHHHj
+
+# ---------------------------------------------------------------- concrete
+@frames t_concrete 3 16 16
+AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA
+AAAAA4AAAAAAAAAA AAAAA4AAAAAAAAAA AAAAA4AAAAAAAAAA
+AAAAAAAAAAAaAAAA AAAAAAAAAAAaAAAA AAAAAAAAAAAaAAAA
+AAAAAAAAAAAAAAAA AAAAAAaaaAAAAAAA AAAAAAAAAAAAAAAA
+AaAAAAAAAAAAAAAA AaAAAaa2aaaAAAAA AaAAAAAAAAAAAAAA
+AAAAAAAAA4AAAAAA AAAAaa222aaaAAAA AAAAAAAAA4AAAAAA
+AAAAAAAAAAAAAAAA AAAAAaa22a2aAAAA AAaaAAAAAAAAAAAA
+AAAAAAAAAAAAAAAA AAAAAAaaaaaaAAAA AAAAaaAAAAAAAAAA
+AAAA4AAAAAAAAAAA AAAA4AAAaaAAaAAA AAAA4AaaaAAAAAAA
+AAAAAAAAAAAAA4AA AAAAAAAAAAAAA4AA AAAAAAAAAaaAA4AA
+AAAAAAAaAAAAAAAA AAAAAAAaAAAAAAAA AAAAAAAaAAAaaAAA
+AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA AAAAAAAAAAAAAaAA
+AAaAAAAAAAAAAAAA AAaAAAAAAAAAAAAA AAaAAAAAAAAAAAAA
+AAAAAAAAAAAaAAAA AAAAAAAAAAAaAAAA AAAAAAAAAAAaAAAA
+AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA
+
+# ---------------------------------------------------------------- wood
+@frames t_wood 3 16 16
+WWWWWWWWWnnWWWWW WWWWWWWWWnnWWWWW WWWWWWWWWnnWWWWW
+WWNNWWWWWWWWWWWW WWNNWWWWWWWWWWWW WWNNWWWWWWWWWWWW
+WWWWWWWnnWWWWNNW WWWWWWWnnWWWWNNW WWWWWWWnnWWWWNNW
+MMMMMMMMMMMMMMMM MMMMMMMMMMMMMMMM MMMMMMMMMMMMMMMM
+WWWWWWWWWWWMWWWW WWWWWWWWWWWMWWWW WWWWWWWWWWWMWWWW
+WnnWWWWNNWWMWWWW WnnWWWWNNWWMWWWW WnnWWWWNNWWMWWWW
+WWWWWWWWWWWMWnnW WWWWWWWWWWWMWnnW WWWWWWWWWWWMWnnW
+MMMMMMMMMMMMMMMM MMMMMMMMMMMMMMMM MMMMMMMMMMMMMMMM
+WWWMWWWWWWWWWWWW WWWMWWWWWnnWWWWW WWWMWw0000000nWW
+WWWMWWNNNWWWWWWW WWWMWWWWnNNnWWWW WWWMWw1M2M2M1nWW
+WnWMWWWWWWWWnnWW WnWMWWWWWnnWWWWW WnWMWw0000000nWW
+MMMMMMMMMMMMMMMM MMMMMMMMMMMMMMMM MMMMMMMMMMMMMMMM
+WWWWWWWWWWWWWWWW WWWWWWWWWWWWWWWW WWWWWWWWWWWWWWWW
+WWWWnnnWWWWWNNWW WWWWnnnWWWWWNNWW WWWWnnnWWWWWNNWW
+WNNWWWWWWWWWWWWW WNNWWWWWWWWWWWWW WNNWWWWWWWWWWWWW
+MMMMMMMMMMMMMMMM MMMMMMMMMMMMMMMM MMMMMMMMMMMMMMMM
+
+# ---------------------------------------------------------------- rubble
+@frames t_rubble 2 16 16
+A4AAAAAAA44AAAAA AAAAAAA4AAAAAAAA
+44eeAAAAA4AAA5AA AA4AAAAAAAAA6eAA
+AeEeeaAA4AAAA4aA AAAAAeAAAAAAe5aA
+Ae5e5aA6eAAAAAAA A6eAAaAAA4AAAaAA
+AAaaaAAe5aAAAAAA AeeeaAAAAAAAAAAA
+AAAAAAAAaAA4AAAA A55eaAAAAAA44AAA
+A5AAAAAAAAeE6AA4 AAaaAAAA6eEeAAAA
+AaAA44AAA6eeeaAA AAAAA4AAee5e5aAA
+AAAA4eeAAe5e55aA AAAAAAAAe55e5aAA
+AAAAAe55aA5aaaAA AAeAAAAAAa5aaaAA
+AA4AAAaaAAAAAAAA AAaAAAAAAAaAAAAA
+AAAAAAAAAA4AAeAA AAAAAA44AAAAA6AA
+AA6eAAAAAAAAA5aA AAAAAAAAAAAA6eaA
+AAe5aAAAeAAAAAAA AA5AAAAeAAAA55aA
+AAAaaAA44AAAA44A AAaAAAAaAAAAAaAA
+AAAAAAA4AAAAAAAA AAAAAAAAAAAAAAAA
+
+
+# ---------------------------------------------------------------- wall autotile templates (32x48)
+# x0-15/y0-15 solo pillar, x16-31/y0-15 inner-corner notches, y16-47 2x2 block.
+# Surface texture is 8px-periodic so edge/interior quadrants repeat seamlessly.
+@sprite wt_concrete 32 48
+.00000000000000.0154444444444310
+01111111111111101154444444444311
+01555555555555105553444444434555
+01544445444443104444444544444445
+01544444444443104444444444444444
+01544444454443104544444445444444
+01544434444443104444443444444434
+01544444444443104444444444444444
+01544444444443104444444444444444
+01544444444443104444444444444444
+01534444444343104443444444434444
+01544445444443104444444544444445
+01544444444443104444444444444444
+01333333333333103334444445444333
+01111111111111101154443444444311
+.00000000000000.0154444444444310
+.000000000000000000000000000000.
+01111111111111111111111111111110
+01555555555555555555555555555510
+01544445444444454444444544444310
+01544444444444444444444444444310
+01544444454444444544444445444310
+01544434444444344444443444444310
+01544444444444444444444444444310
+01544444444444444444444444444310
+01544444444444444444444444444310
+01534444444344444443444444434310
+01544445444444454444444544444310
+01544444444444444444444444444310
+01544444454444444544444445444310
+01544434444444344444443444444310
+01544444444444444444444444444310
+01544444444444444444444444444310
+01544444444444444444444444444310
+01534444444344444443444444434310
+01544445444444454444444544444310
+01544444444444444444444444444310
+01544444454444444544444445444310
+01544434444444344444443444444310
+01544444444444444444444444444310
+01544444444444444444444444444310
+01544444444444444444444444444310
+01534444444344444443444444434310
+01544445444444454444444544444310
+01544444444444444444444444444310
+01333333333333333333333333333310
+01111111111111111111111111111110
+.000000000000000000000000000000.
+
+
+# exterior brick: running bond, shaded brick ends
+@sprite wt_brick 32 48
+.00000000000000.01LFFFxMFFFFFx10
+011111111111111011LFFFxMFFFFFx11
+01LLLLLLLLLLLL10LLLFFxxMFFFFFLLL
+01LMMMMMMMMMMx10MMMMMMMMMMMMMMMM
+01LMFFFFFFxMFx10FFxMFFFFFFxMFFFF
+01LMFFFFFFxMFx10FFxMFFFFFFxMFFFF
+01LMFFFFFxxMFx10FxxMFFFFFxxMFFFF
+01LMMMMMMMMMMx10MMMMMMMMMMMMMMMM
+01LFFFxMFFFFFx10FFFFFFxMFFFFFFxM
+01LFFFxMFFFFFx10FFFFFFxMFFFFFFxM
+01LFFxxMFFFFFx10FFFFFxxMFFFFFxxM
+01LMMMMMMMMMMx10MMMMMMMMMMMMMMMM
+01LMFFFFFFxMFx10FFxMFFFFFFxMFFFF
+01xxxxxxxxxxxx10xxxMFFFFFFxMFxxx
+011111111111111011LMFFFFFxxMFx11
+.00000000000000.01LMMMMMMMMMMx10
+.000000000000000000000000000000.
+01111111111111111111111111111110
+01LLLLLLLLLLLLLLLLLLLLLLLLLLLL10
+01LMMMMMMMMMMMMMMMMMMMMMMMMMMx10
+01LMFFFFFFxMFFFFFFxMFFFFFFxMFx10
+01LMFFFFFFxMFFFFFFxMFFFFFFxMFx10
+01LMFFFFFxxMFFFFFxxMFFFFFxxMFx10
+01LMMMMMMMMMMMMMMMMMMMMMMMMMMx10
+01LFFFxMFFFFFFxMFFFFFFxMFFFFFx10
+01LFFFxMFFFFFFxMFFFFFFxMFFFFFx10
+01LFFxxMFFFFFxxMFFFFFxxMFFFFFx10
+01LMMMMMMMMMMMMMMMMMMMMMMMMMMx10
+01LMFFFFFFxMFFFFFFxMFFFFFFxMFx10
+01LMFFFFFFxMFFFFFFxMFFFFFFxMFx10
+01LMFFFFFxxMFFFFFxxMFFFFFxxMFx10
+01LMMMMMMMMMMMMMMMMMMMMMMMMMMx10
+01LFFFxMFFFFFFxMFFFFFFxMFFFFFx10
+01LFFFxMFFFFFFxMFFFFFFxMFFFFFx10
+01LFFxxMFFFFFxxMFFFFFxxMFFFFFx10
+01LMMMMMMMMMMMMMMMMMMMMMMMMMMx10
+01LMFFFFFFxMFFFFFFxMFFFFFFxMFx10
+01LMFFFFFFxMFFFFFFxMFFFFFFxMFx10
+01LMFFFFFxxMFFFFFxxMFFFFFxxMFx10
+01LMMMMMMMMMMMMMMMMMMMMMMMMMMx10
+01LFFFxMFFFFFFxMFFFFFFxMFFFFFx10
+01LFFFxMFFFFFFxMFFFFFFxMFFFFFx10
+01LFFxxMFFFFFxxMFFFFFxxMFFFFFx10
+01LMMMMMMMMMMMMMMMMMMMMMMMMMMx10
+01LMFFFFFFxMFFFFFFxMFFFFFFxMFx10
+01xxxxxxxxxxxxxxxxxxxxxxxxxxxx10
+01111111111111111111111111111110
+.000000000000000000000000000000.
+
+
+# mall: plum tiles edged with a pink neon tube
+@sprite wt_mall 32 48
+.00000000000000.01pmqqq2Uqqqmp10
+011111111111111011pmqqq2qqqqmp11
+01pppppppppppp10pppmqqq2qqqqmppp
+01pmmmmmmmmmmp10mmmmqqq2qqqqmmmm
+01pmqqq2qqqqmp10qqqqqqq2qqqqqqq2
+01pmqqq2qqqqmp10qqqqqqq2qqqqqqq2
+01pmqqq2qqqqmp10qqqqqqq2qqqqqqq2
+01pm22222222mp102222222222222222
+01pmqqq2Uqqqmp10Uqqqqqq2Uqqqqqq2
+01pmqqq2qqqqmp10qqqqqqq2qqqqqqq2
+01pmqqq2qqqqmp10qqqqqqq2qqqqqqq2
+01pmqqq2qqqqmp10qqqqqqq2qqqqqqq2
+01pmmmmmmmmmmp10mmmmqqq2qqqqmmmm
+01pppppppppppp10pppmqqq2qqqqmppp
+011111111111111011pmqqq2qqqqmp11
+.00000000000000.01pm22222222mp10
+.000000000000000000000000000000.
+01111111111111111111111111111110
+01pppppppppppppppppppppppppppp10
+01pmmmmmmmmmmmmmmmmmmmmmmmmmmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pm222222222222222222222222mp10
+01pmqqq2Uqqqqqq2Uqqqqqq2Uqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pm222222222222222222222222mp10
+01pmqqq2Uqqqqqq2Uqqqqqq2Uqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pm222222222222222222222222mp10
+01pmqqq2Uqqqqqq2Uqqqqqq2Uqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
+01pmmmmmmmmmmmmmmmmmmmmmmmmmmp10
+01pppppppppppppppppppppppppppp10
+01111111111111111111111111111110
+.000000000000000000000000000000.
+
+
+# overgrown hedge boundary: leaf clumps, scalloped silhouette
+@sprite wt_hedge 32 48
+.1111....1111....1GGvVVVVvGGVV0.
+1GGGG1111GGGG11.11GGvVvVvGGvVV11
+1GGGGvvvGGGGGv0.GGGGvVVVvGvvVvvv
+1GGvVvGvvvvvVvV0vGGGVVvVVvvvvvGv
+1vvVvGGvVVVVvvv0VVVVvGGvVVVVvGGv
+.1vGGGvvVvVvGvV0VvVvGGvvVvVvGGvv
+.1vGGvvvVVVvGVV0VVVvGvvvVVVvGvvv
+.1vvvvvVVVVVVV0.VVVVvvvVVVVVvvvV
+.1GGvVVVVvGGVV0.VvGGvVVVVvGGvVVV
+1GGvvVvVvGGvVV0.vGGvvVvVvGGvvVvV
+1GGvvVVVvGvvVV0.vGvvvVVVvGvvvVVV
+1GGvVVvVVvvvVVV0VvvvVVvVVvvvVVvV
+1vVVvGGVVVVVvvv0VVVVvGGvVVVVVvvV
+.1VVvvVVVVVVvvV0VVVGGGvvVvVvvvVV
+.00VvVV0000VvVV000vGGvvvVVVvvV00
+...0000....0000..1vvvvvVVVVVVV0.
+.1111....1111....1111....1111...
+1GGGG1111GGGG1111GGGG1111GGGG11.
+1GGGGvvvGGGGGvvvGGGGGvvvGGGGGv0.
+1GGvVvGvvvvvVvGvvvvvVvGvvvvvVvV0
+1vvVvGGvVVVVvGGvVVVVvGGvVVVVvvv0
+.1vGGGvvVvVvGGvvVvVvGGvvVvVvGvV0
+.1vGGvvvVVVvGvvvVVVvGvvvVVVvGVV0
+.1vvvvvVVVVVvvvVVVVVvvvVVVVVVV0.
+.1GGvVVVVvGGvVVVVvGGvVVVVvGGVV0.
+1GGvvVvVvGGvvVvVvGGvvVvVvGGvVV0.
+1GGvvVVVvGvvvVVVvGvvvVVVvGvvVV0.
+1GGvVVvVVvvvVVvVVvvvVVvVVvvvVVV0
+1vvVvGGvVVVVvGGvVVVVvGGvVVVVvvv0
+.1vGGGvvVvVvGGvvVvVvGGvvVvVvGvV0
+.1vGGvvvVVVvGvvvVVVvGvvvVVVvGVV0
+.1vvvvvVVVVVvvvVVVVVvvvVVVVVVV0.
+.1GGvVVVVvGGvVVVVvGGvVVVVvGGVV0.
+1GGvvVvVvGGvvVvVvGGvvVvVvGGvVV0.
+1GGvvVVVvGvvvVVVvGvvvVVVvGvvVV0.
+1GGvVVvVVvvvVVvVVvvvVVvVVvvvVVV0
+1vvVvGGvVVVVvGGvVVVVvGGvVVVVvvv0
+.1vGGGvvVvVvGGvvVvVvGGvvVvVvGvV0
+.1vGGvvvVVVvGvvvVVVvGvvvVVVvGVV0
+.1vvvvvVVVVVvvvVVVVVvvvVVVVVVV0.
+.1GGvVVVVvGGvVVVVvGGvVVVVvGGVV0.
+1GGvvVvVvGGvvVvVvGGvvVvVvGGvVV0.
+1GGvvVVVvGvvvVVVvGvvvVVVvGvvVV0.
+1GGvVVvVVvvvVVvVVvvvVVvVVvvvVVV0
+1vVVvGGVVVVVvGGVVVVVvGGVVVVVvvv0
+.1VVvvVVVVVVvvVVVVVVvvVVVVVVvvV0
+.00VvVV0000VvVV0000VvVV0000VvVV0
+...0000....0000....0000....0000.
+
+
+# ruined concrete: chunky broken slabs, bitten edges, rebar stubs
+@sprite wt_ruin 32 48
+.00.n.00000...0.0154321555443110
+0110O0111110.0101154321454443111
+.0110125555101105553321444433325
+.0141244333412103333214433332144
+012554442115510.2115444421154444
+01544443115310..1154444311544443
+01544433O144310.O1444433O1444433
+014333221O3332101O3333221O333322
+01543215554431105544321555443215
+01543214544431105444321454443214
+.0143214444331104443321444433214
+.0142144333321103333214433332144
+011544442115310.2115444421154444
+01133332111310..1144444311544332
+000111111001110.11544433O1444311
+...000000..0000.014333221O333210
+.00...00000.n.00000...00000...0.
+0110.0111110O0111110.0111110.010
+.0110125555101255551012555510110
+.0141244333412443334124433341210
+0125544421155444211554442115510.
+015444431154444311544443115310..
+01544433O1444433O1444433O144310.
+014333221O3333221O3333221O333210
+01543215554432155544321555443110
+01543214544432145444321454443110
+.0143214444332144443321444433110
+.0142144333321443333214433332110
+0125444421154444211544442115310.
+015444431154444311544443115310..
+01544433O1444433O1444433O144310.
+014333221O3333221O3333221O333210
+01543215554432155544321555443110
+01543214544432145444321454443110
+.0143214444332144443321444433110
+.0142144333321443333214433332110
+0125444421154444211544442115310.
+015444431154444311544443115310On
+01544433O1444433O1444433O144310.
+014333221O3333221O3333221O333210
+01543215554432155544321555443110
+01543214544432145444321454443110
+.0143214444332144443321444433110
+.0142144333321443333214433332110
+0115444421154444211544442115310.
+011333321113333211133332111310..
+0001111110011111100111111001110.
+...000000..000000..000000..0000.
+
+
+# ---------------------------------------------------------------- storefront glass
+@sprite t_glass_h 16 16
+................
+................
+................
+................
+................
+zJ..............
+zJzzzzzzzzzzzzzz
+zJ~~~~~~;~~~~;~~
+zJ~~~~~~~;~~~~;~
+Jj~~~~~~~~;~~~~~
+jjjjjjjjjjjjjjjj
+,,,,,,,,,,,,,,,,
+................
+................
+................
+................
+
+@rot t_glass_v t_glass_h 90
+
+@sprite t_glass_broken_h 16 16
+................
+................
+...;............
+.........~......
+................
+zJ..............
+zJzzzzzzzzzzzzzz
+zJ~~~.;~..~;~...
+zJ~;...~...~....
+Jj~........~~..~
+jjjjjjjjjjjjjjjj
+,,,,,,,,,,,,,,,,
+................
+....~;......;...
+..;........~~...
+.......;........
+
+@rot t_glass_broken_v t_glass_broken_h 90
+
+
+# ---------------------------------------------------------------- floor overlays (alpha decals, pivot centre)
+@frames o_moss 4 16 16
+................ ................ ................ ................
+................ ................ ..v.......v..... ................
+......vv........ ................ .vZvv...vvZv.... ................
+....vvZvv.v..... ................ .vGZZvvvZZZv.... ................
+...vZGZZvvv..... .....v.......... ..vZZZZZZVv..... ................
+..vZGGZZZZvv.... ....vZvv........ ..vZGZZVZv...... .v..............
+..vZZGZZZVZv.... ...vGZZv....v... ...vZZZZZZvv.... vZv.....v.......
+.vvZZZZZVZZvv... ...vZZVv...vZv.. ....vVZZZZZZv... .vZvv..vZv..vv..
+..vZZZZZZZZZv... ....vvv.....v... ...vZZZGZZVZvv.. ..vZZv.vZGvvZZv.
+...vVZZZZVZv.... .....v.......... ..vZZZZZZZZZZv.. ...vZZvZGZZZZvZv
+....vvZVZZvv.... ................ ..vZVZZZZVZZv... ....vZZZZvvZv.v.
+.....v.vvvv..... .......vv....... ...vvZZZvvvv.... .....vvZv..v....
+........v....... ......vZZv...... .....vvv........ ......v.........
+................ .......vv....... ................ ................
+................ ................ ................ ................
+................ ................ ................ ................
+
+@frames o_grass_tuft 4 8 8
+...G.... ........ ......G. ...T....
+.G.v..G. ...G.... ..G..Gv. .T.f..T.
+..vGvGv. .G.vG.G. .G..Gv.. ..fTfTf.
+Gv.vVv.. ..vVVv.. ..vGvv.G Tf.fNf..
+.vvVVvG. .GvVVVvG .GvvvVvv .ffNNfT.
+..VVV,.. ..vVVv,. ..vVVV,. ..NNN,..
+...,,... .v.,v.,. ...,,,.. ...,,...
+........ ........ ........ ........
+
+@frames o_vines 3 16 16
+.Gv............. .......vv....... ................
+GGvV............ ......v......... .....Gv.Gv......
+.vV,v........... .....Gv......... ...GvGGvGGvV....
+....v.Gv........ ....GGvV........ ..GGvVvvvVvGv...
+.....vGGvV...... .....vV,........ ...vVGvGvGGvV...
+......vvV,...... ......v......... ..GvGGvVvvVvV,..
+.......v,....... .......v.Gv..... .GGvVvVGGvGv,...
+...Gv...v....... .......vGGvV.... ..vVGvGvvVvV,...
+..GGvV..v.Gv.... ........vvV,.... ...,vVvVvV,v....
+...vV,vv.GGvV... .......v.,...... ....,,v,,,..v...
+....,....vvV,... .Gv...v......... .......v.....v..
+.........v,..... GGvV.v.......... ......v.......v.
+..........v.Gv.. .vVvv........... .....v.........,
+...........vGGvV ..,............. ....v...........
+............vvV, ................ ...,............
+.............,,. ................ ................
+
+@frames o_crack 4 16 16
+................ ................ ................ ................
+................ ................ ................ .:..............
+..:............. .....,.......... ................ ..:.............
+...:............ ......:.....,... ................ ..:.............
+...,::.......... ......:....:.... ................ ...::...........
+......:......... .......:..:..... ....,:.......... .....:..........
+......,:::...... ..,.....::...... ......::........ .....:::........
+.........:..,... ...::::.::...... ........:::..... ....:...::......
+.........,:.:... .......:::::,... ...........::... ...,......:.....
+..........::.... ......:..:...::. .............,.. ...........::...
+...........:.... .....:...:...... ................ ..........:..:..
+...........,:... ....,.....:..... ................ .........:....:.
+.............:.. ..........,..... ................ ..............,.
+..............:. ................ ................ ................
+................ ................ ................ ................
+................ ................ ................ ................
+
+@frames o_puddle 2 32 16
+................................ ................................
+................................ ................................
+...........,,,,,,............... ................................
+.......,,,,::~~~~,,,,........... ....,,,,,.......................
+.....,,:::~~~~~~~~~~~,,......... ..,,:~~~~,,.........,,,,........
+....,::~~~~~;;~~~~~~~~~,,,...... .,:~~;;~~~~,,,,,,,,,~~~~,,......
+...,::~~~~~~~~~~~~~;~~~~~~,..... .,:~~~~~~~~~~~~~~~~~~~~~~~,.....
+...,:~~~~~~~~~~~~~~~~~~~~~~~,... .,:~~~~~~~~~~~:~~~~~~~;~~~~,....
+....,:~~~~~~;~~~~~~~~~~~~~~,.... ..,,:~~~~~~~~~~~~;~~~~~~~~~,....
+.....,,:~~~~~~~~~~~~~;;~~~,..... ....,,,,,,,,:~~~~~~~~~~~~~,.....
+.......,,,:~~~~~~~~~~~~~:,,..... ............,,,,::~~~~~,,.......
+..........,,,,,::::::::,,....... .................,,,,,,.........
+...............,,,,,,........... ................................
+................................ ................................
+................................ ................................
+................................ ................................
+
+@frames o_trash 6 8 8
+........ ........ ........ ........ ........ ........
+..hh7... ........ .6z6z6.. ..zz.... .77..... .....O..
+.h7hHh.. .6rrrrr. .BBbBB.. .z55J... .8577... ...OOO..
+.hHh7H,. 65rhhrR, .BbyyB,. .J55j,.. ..8577.. ..OYOn..
+..hHHH,. 65RRRRx, .ByhyB,. ..Jj,... ...8577. .OOnO,..
+...,,,.. .,,,,,,. .BBBbd,. ...,.hO. ....877, .n.,,...
+........ ........ .6z6z6,. ....hh,. .....,,. n.......
+........ ........ ..,,,,,. ....,,.. ........ ........
+
+@frames o_leaves 3 16 16
+................ ................ ................
+................ .........W...... ................
+...OO........... ........WnW,.... ................
+..OYOn,......... .........W,..... .....OYO........
+...On,.......... ...O............ ....OOnO,.......
+................ ..OYO,.......... .....On,..WW....
+..........nn.... ...n,........... .........WnW,...
+.........nWn,... ................ ..........W,....
+..........n,.... .............Y.. .....Y..........
+................ ............YOY, ....YOn.....OO..
+.....YY......... .............,.. .....n,....OYn,.
+....YOY,........ .......nO....... ............,...
+.....Y,......... ......nOO,...... ................
+...........On... .......n,....... ................
+..........OYn,.. ................ ................
+...........,.... ................ ................
+
+@frames o_rubble 2 16 16
+................ ................
+................ .........6......
+...6e........... ........6ee,....
+..6eee5,....E... ...E6...5e5,....
+..5eee5,...Ee,.. ..Eeee,..,,.....
+...555,,....,... ..eee5,.........
+....,,.......... ...55,,....5....
+.......5........ ....,.....,,....
+......6e5,..L... ..........O.....
+..E....,,..LFF,. .6e.......O.....
+.Ee,.......FFM,. .ee5,....On.....
+..,..e6.....,,.. ..,,....On,.....
+....6ee5,....... ........,.......
+.....55,,..e.... ....5......E6...
+......,,...,.... ....,......e5,..
+................ ............,...
+
+@frames o_stain 3 16 16
+................ ................ ................
+................ ................ ................
+.....,,,........ ................ ................
+...,,::,,,...... ....,,,,,,...... ......,.........
+..,:::::::,..... ...,,....,,..... .....,:,........
+..,::::::::,.... ..,,......,,.... .....,:,........
+..,,:::::::,.... ..,........,.... ....,::,........
+...,::::::,,.... ..,........,.... ....,:::,.......
+....,,:::,,..,.. ..,,......,,.... ...,::::,.......
+......,,,....... ...,,,...,,..... ...,:::::,......
+..........,..... .....,,,,,...... ...,:::::,......
+................ ................ ....,:::,.......
+................ ................ .....,,,........
+................ ................ ................
+................ ................ ................
+................ ................ ................
+
+@frames o_roots 2 16 16
+................ .......::.......
+................ ......:nn:......
+................ ......:wnN......
+..:::........... .......wn,......
+.:::nn.......... ......Nwn.......
+.::wwnn......... .....nwnN.......
+..:Nwwwn........ ..::nwwN,.......
+...,NNwwnnn..... .:wwwnN,..nn....
+.....,NNwwwnn... .:NNN,...nwnN...
+.......,NNNwwn.. ..,,....nwnN,...
+.........,,Nwn:. .......nwN,.....
+...........N:::. .....:wwN,......
+....::......::.. .....:::,..e6...
+...:nw:......... ...........e5,..
+....,N,......... ............,...
+................ ................

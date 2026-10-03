@@ -1,0 +1,77 @@
+# LAST AISLE master palette.
+# One character per colour. '.' is always fully transparent.
+# Format: <char> #rrggbb[aa]
+#
+# --- neutrals (cool, slightly purple) ---
+0 #0b0a10
+1 #1a1724
+2 #2b2735
+3 #423c4e
+4 #625a6e
+5 #8a8294
+6 #b3abb8
+7 #dcd6d8
+8 #fbf8f2
+# --- skin ---
+s #f0c29e
+S #cf8f68
+k #9b5c40
+K #5f3426
+# --- reds / pinks ---
+r #e8293f
+R #a8152e
+x #5e0b1e
+p #ff5f95
+m #c01d62
+P #f2a6c4
+Q #d47596
+# --- orange / yellow / brown ---
+o #ff8c2e
+O #c4561c
+y #ffd447
+Y #c69a22
+X #ffefa8
+n #7c4b22
+N #4a2b17
+w #b07d4f
+W #73502f
+# --- greens ---
+l #cfe08e
+g #a2d34c
+G #5f9d31
+v #2f6127
+V #1a3b1d
+Z #3f5c3e
+T #737d3b
+# --- blues / teals / purples ---
+b #52c8ff
+B #2b6dd6
+d #1e3d80
+D #131f48
+c #62ecd0
+C #2a9488
+t #18505a
+u #a764ea
+U #5b2f92
+q #2a1846
+# --- urban: asphalt, concrete, paper, glass, metal, brick ---
+a #36363e
+A #4f4f58
+e #8b8479
+E #b7ae9e
+f #625b50
+h #e3d7bc
+H #a99c7e
+i #7d9ea8
+I #c7e6ec
+j #33454f
+J #5a7380
+z #96aab4
+F #8e3020
+L #b8573a
+M #3f2219
+# --- translucent helpers ---
+, #00000059
+: #0000009a
+; #ffffff73
+~ #9cc8d47a

@@ -1,0 +1,6 @@
+build/
+build-cmake/
+lastaisle
+*.o
+.DS_Store
+LastAisle.app/

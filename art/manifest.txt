@@ -1,0 +1,347 @@
+# LAST AISLE sprite manifest: NAME FRAMES W H PIVOT_X PIVOT_Y
+# Every sprite referenced by the game code. Art lives in art/*.art.
+# Orientation rule: anything that rotates (characters, weapons, fx) faces RIGHT (+x).
+
+# ============================================================== characters.art
+# 24x24 torsos, pivot = body centre. Hand anchors (see STYLE.md):
+#   *_1h : right hand grip at pixel (18,16)
+#   *_2h : weapon grip at pixel (17,13)
+player_idle   1 24 24 12 12
+player_1h     1 24 24 12 12
+player_2h     1 24 24 12 12
+player_punch  2 24 24 12 12
+player_down   1 32 32 16 16
+player_dead   3 32 32 16 16
+legs_player   4 24 24 12 12
+
+scav_idle     1 24 24 12 12
+scav_1h       1 24 24 12 12
+scav_2h       1 24 24 12 12
+scav_punch    2 24 24 12 12
+scav_down     1 32 32 16 16
+scav_dead     3 32 32 16 16
+legs_scav     4 24 24 12 12
+
+looter_idle   1 24 24 12 12
+looter_1h     1 24 24 12 12
+looter_2h     1 24 24 12 12
+looter_punch  2 24 24 12 12
+looter_down   1 32 32 16 16
+looter_dead   3 32 32 16 16
+legs_looter   4 24 24 12 12
+
+raider_idle   1 24 24 12 12
+raider_1h     1 24 24 12 12
+raider_2h     1 24 24 12 12
+raider_punch  2 24 24 12 12
+raider_down   1 32 32 16 16
+raider_dead   3 32 32 16 16
+legs_raider   4 24 24 12 12
+
+brute_idle    1 24 24 12 12
+brute_1h      1 24 24 12 12
+brute_2h      1 24 24 12 12
+brute_punch   2 24 24 12 12
+brute_down    1 32 32 16 16
+brute_dead    3 32 32 16 16
+legs_brute    4 24 24 12 12
+
+gunner_idle   1 24 24 12 12
+gunner_1h     1 24 24 12 12
+gunner_2h     1 24 24 12 12
+gunner_punch  2 24 24 12 12
+gunner_down   1 32 32 16 16
+gunner_dead   3 32 32 16 16
+legs_gunner   4 24 24 12 12
+
+pig_idle      1 24 24 12 12
+pig_1h        1 24 24 12 12
+pig_2h        1 24 24 12 12
+pig_punch     2 24 24 12 12
+pig_down      1 32 32 16 16
+pig_dead      3 32 32 16 16
+legs_pig      4 24 24 12 12
+
+feral_idle    1 24 24 12 12
+feral_1h      1 24 24 12 12
+feral_2h      1 24 24 12 12
+feral_punch   2 24 24 12 12
+feral_down    1 32 32 16 16
+feral_dead    3 32 32 16 16
+legs_feral    4 24 24 12 12
+
+# the Mall King (final boss) - 32x32 canvas, grips: 1h (24,22) 2h (23,17)
+boss_idle     1 32 32 16 16
+boss_1h       1 32 32 16 16
+boss_2h       1 32 32 16 16
+boss_punch    2 32 32 16 16
+boss_down     1 48 48 24 24
+boss_dead     1 48 48 24 24
+legs_boss     4 32 32 16 16
+
+# ================================================================= weapons.art
+# Held/floor sprites pointing RIGHT, pivot = grip point.
+w_broom       1 26 7 5 3
+w_bat         1 20 5 4 2
+w_nailbat     1 20 7 4 3
+w_barbedbat   1 20 7 4 3
+w_crowbar     1 16 6 3 3
+w_pipe        1 18 4 3 2
+w_golfclub    1 20 6 3 2
+w_pan         1 16 10 2 5
+w_knife       1 11 4 2 2
+w_machete     1 17 5 3 2
+w_cleaver     1 12 7 2 4
+w_fireaxe     1 20 9 3 4
+w_sledge      1 20 9 3 4
+w_spear       1 28 5 6 2
+w_chainsaw    1 22 9 4 5
+w_pistol      1 9 5 1 3
+w_revolver    1 11 5 1 3
+w_shotgun     1 22 5 4 3
+w_sawnoff     1 14 5 3 3
+w_rifle       1 26 5 5 3
+w_nailgun     1 12 7 2 4
+w_pipegun     1 16 5 3 3
+w_torch       1 11 7 2 4
+w_brick       1 7 5 3 2
+w_bottle      1 9 4 3 2
+w_molotov     1 11 5 3 2
+w_pipebomb    1 8 5 3 2
+
+# =================================================================== items.art
+# 16x16 inventory / floor icons, pivot centre.
+i_beans       1 16 16 8 8
+i_soup        1 16 16 8 8
+i_tuna        1 16 16 8 8
+i_peaches     1 16 16 8 8
+i_rice        1 16 16 8 8
+i_pasta       1 16 16 8 8
+i_pbutter     1 16 16 8 8
+i_crackers    1 16 16 8 8
+i_chocolate   1 16 16 8 8
+i_cereal      1 16 16 8 8
+i_noodles     1 16 16 8 8
+i_water       1 16 16 8 8
+i_formula     1 16 16 8 8
+i_honey       1 16 16 8 8
+i_dogfood     1 16 16 8 8
+i_soda        1 16 16 8 8
+i_jerky       1 16 16 8 8
+i_coffee      1 16 16 8 8
+i_batteries   1 16 16 8 8
+i_gasoline    1 16 16 8 8
+i_antibiotics 1 16 16 8 8
+i_seeds       1 16 16 8 8
+i_toiletpaper 1 16 16 8 8
+i_candles     1 16 16 8 8
+i_propane     1 16 16 8 8
+i_flashlight  1 16 16 8 8
+i_vitamins    1 16 16 8 8
+i_soap        1 16 16 8 8
+i_bandage     1 16 16 8 8
+i_painkillers 1 16 16 8 8
+i_medkit      1 16 16 8 8
+i_ducttape    1 16 16 8 8
+i_nails       1 16 16 8 8
+i_rag         1 16 16 8 8
+i_lighter     1 16 16 8 8
+i_spraycan    1 16 16 8 8
+i_barbedwire  1 16 16 8 8
+i_gunpowder   1 16 16 8 8
+i_hacksaw     1 16 16 8 8
+i_vodka       1 16 16 8 8
+i_ammo9       1 16 16 8 8
+i_shells      1 16 16 8 8
+i_rifleammo   1 16 16 8 8
+i_backpack    1 16 16 8 8
+i_duffel      1 16 16 8 8
+i_hikingpack  1 16 16 8 8
+i_broom       1 16 16 8 8
+i_bat         1 16 16 8 8
+i_nailbat     1 16 16 8 8
+i_barbedbat   1 16 16 8 8
+i_crowbar     1 16 16 8 8
+i_pipe        1 16 16 8 8
+i_golfclub    1 16 16 8 8
+i_pan         1 16 16 8 8
+i_knife       1 16 16 8 8
+i_machete     1 16 16 8 8
+i_cleaver     1 16 16 8 8
+i_fireaxe     1 16 16 8 8
+i_sledge      1 16 16 8 8
+i_spear       1 16 16 8 8
+i_chainsaw    1 16 16 8 8
+i_pistol      1 16 16 8 8
+i_revolver    1 16 16 8 8
+i_shotgun     1 16 16 8 8
+i_sawnoff     1 16 16 8 8
+i_rifle       1 16 16 8 8
+i_nailgun     1 16 16 8 8
+i_pipegun     1 16 16 8 8
+i_torch       1 16 16 8 8
+i_brick       1 16 16 8 8
+i_bottle      1 16 16 8 8
+i_molotov     1 16 16 8 8
+i_pipebomb    1 16 16 8 8
+
+# =================================================================== tiles.art
+# Floors 16x16 pivot 0,0 (must tile seamlessly with themselves).
+t_asphalt       4 16 16 0 0
+t_asphalt_line  2 16 16 0 0
+t_asphalt_hline 2 16 16 0 0
+t_curb          2 16 16 0 0
+t_sidewalk      3 16 16 0 0
+t_grass         4 16 16 0 0
+t_dirt          3 16 16 0 0
+t_lino          4 16 16 0 0
+t_whitetile     3 16 16 0 0
+t_carpet        2 16 16 0 0
+t_mall          4 16 16 0 0
+t_concrete      3 16 16 0 0
+t_wood          3 16 16 0 0
+t_rubble        2 16 16 0 0
+# Wall autotile templates 32x48 (layout in STYLE.md), pivot 0,0
+wt_concrete     1 32 48 0 0
+wt_brick        1 32 48 0 0
+wt_mall         1 32 48 0 0
+wt_hedge        1 32 48 0 0
+wt_ruin         1 32 48 0 0
+# Storefront glass, pivot 0,0
+t_glass_h        1 16 16 0 0
+t_glass_v        1 16 16 0 0
+t_glass_broken_h 1 16 16 0 0
+t_glass_broken_v 1 16 16 0 0
+# Floor overlays (alpha), pivot centre
+o_moss        4 16 16 8 8
+o_grass_tuft  4 8 8 4 4
+o_vines       3 16 16 8 8
+o_crack       4 16 16 8 8
+o_puddle      2 32 16 16 8
+o_trash       6 8 8 4 4
+o_leaves      3 16 16 8 8
+o_rubble      2 16 16 8 8
+o_stain       3 16 16 8 8
+o_roots       2 16 16 8 8
+
+# =================================================================== props.art
+# Tile props 16x16 pivot 0,0 (drawn at tile origin)
+p_shelf          6 16 16 0 0
+p_shelf_empty    2 16 16 0 0
+p_shelf_end      2 16 16 0 0
+p_shelfv         6 16 16 0 0
+p_shelfv_empty   2 16 16 0 0
+p_shelfv_end     2 16 16 0 0
+p_shelf_fallen   2 16 16 0 0
+p_fridge         2 16 16 0 0
+p_fridge_r       2 16 16 0 0
+p_fridge_l       2 16 16 0 0
+p_counter        3 16 16 0 0
+p_register       1 16 16 0 0
+p_crate          2 16 16 0 0
+p_box            3 16 16 0 0
+p_pallet         1 16 16 0 0
+p_pallet_goods   1 16 16 0 0
+p_barrel         1 16 16 0 0
+p_locker         2 16 16 0 0
+p_toilet         1 16 16 0 0
+p_sink           1 16 16 0 0
+p_pegboard       2 16 16 0 0
+p_vending        2 16 16 0 0
+p_campfire       3 16 16 0 0
+p_bush           3 16 16 0 0
+p_lamppost       1 16 16 0 0
+p_clothes_rack   1 16 16 0 0
+p_mannequin      1 16 16 0 0
+p_tv             1 16 16 0 0
+# Larger props, pivot 0,0 (top-left)
+p_freezer        2 32 16 0 0
+p_desk           1 32 16 0 0
+p_bench          1 32 12 0 0
+p_lumber         1 32 16 0 0
+p_dumpster       1 32 24 0 0
+p_gaspump        1 16 24 0 0
+p_sleepingbag    1 16 24 0 0
+p_mattress       1 24 32 0 0
+p_table          1 24 24 0 0
+p_planter        1 32 32 0 0
+p_throne         1 32 32 0 0
+p_escalator      1 32 48 0 0
+p_fountain       1 48 48 0 0
+p_car            3 32 48 0 0
+p_car_burnt      1 32 48 0 0
+p_van            1 36 56 0 0
+p_sign_quickstop 1 64 16 0 0
+p_sign_market    1 64 16 0 0
+p_sign_hardware  1 64 16 0 0
+p_sign_pharmacy  1 64 16 0 0
+p_sign_megamart  1 80 16 0 0
+p_sign_mall      1 80 16 0 0
+# Free props, pivot centre (rotate freely)
+p_cart           1 24 16 12 8
+p_cart_fallen    1 24 16 12 8
+p_chair          1 12 12 6 6
+p_tree           2 48 48 24 24
+p_deadtree       1 32 32 16 16
+p_door           1 16 4 1 2
+p_door_glass     1 16 4 1 2
+p_tire           1 12 12 6 6
+p_loot_glint     4 8 8 4 4
+
+# ====================================================================== fx.art
+fx_blood       6 16 16 8 8
+fx_blood_big   3 32 32 16 16
+fx_blood_drip  4 4 4 2 2
+fx_blood_smear 2 24 8 12 4
+fx_footprint   2 4 6 2 3
+fx_gib         8 8 8 4 4
+fx_head        3 8 8 4 4
+fx_muzzle      3 12 9 0 4
+fx_bullet      1 6 2 3 1
+fx_nail        1 6 3 3 1
+fx_shell       2 3 2 1 1
+fx_spark       3 5 5 2 2
+fx_smoke       4 12 12 6 6
+fx_fire        4 16 16 8 12
+fx_explosion   7 48 48 24 24
+fx_slash       3 24 24 12 12
+fx_stab        2 16 8 0 4
+fx_glass       3 4 4 2 2
+fx_dust        3 8 8 4 4
+fx_scorch      2 32 32 16 16
+fx_impact      3 8 8 4 4
+fx_shadow      1 16 10 8 5
+
+# ====================================================================== ui.art
+ui_cursor      1 15 15 7 7
+ui_pointer     1 9 11 0 0
+ui_heart       3 9 8 0 0
+ui_check       1 9 8 0 0
+ui_cross       1 7 7 0 0
+ui_paper       1 24 24 0 0
+ui_tape        1 16 7 8 3
+ui_panel       1 24 24 0 0
+ui_arrow       1 9 9 4 4
+ui_bag         1 12 12 0 0
+ui_cart        1 12 12 0 0
+ui_skull       1 11 11 0 0
+ui_clock       1 11 11 0 0
+ui_ammo        3 5 9 0 0
+ui_exclaim     1 5 10 2 10
+ui_question    1 7 10 3 10
+ui_stars       3 12 6 6 3
+ui_hands       1 12 10 6 10
+ui_key         1 13 13 0 0
+ui_mouse       3 11 15 0 0
+ui_perk        14 16 16 0 0
+ui_portrait    1 64 64 0 0
+ui_radio       1 32 32 0 0
+ui_van         1 16 16 0 0
+ui_star        1 7 7 3 3
+ui_logo        1 160 40 80 20
+
+# ==================================================================== font.art
+# font_small: ASCII 32..126, cell 6x9, cap height 7 (rows 0-6), descenders rows 7-8
+# font_big:   ASCII 32..95,  cell 10x12, cap height 11 (rows 0-10)
+font_small    95 6 9 0 0
+font_big      64 10 12 0 0

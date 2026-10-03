@@ -1,0 +1,461 @@
+# LAST AISLE - UI (ui_*): HUD icons, 9-slices (ui_paper, ui_panel: 8px corners), perks, portrait, logo.
+# Hand-authored pixel art, one char = one pixel (palette.txt).
+
+@sprite ui_cursor 15 15
+000000...000000
+0PPpp0...0ppPP0
+0Pppp0...0pppP0
+0pp000...000pp0
+0pp0...0...0pp0
+0000..0c0..0000
+.....00c00.....
+....0cc8cc0....
+.....00c00.....
+0000..0c0..0000
+0pp0...0...0pp0
+0pp000...000pp0
+0pppp0...0pppp0
+0pmmm0...0mmmm0
+000000...000000
+
+@sprite ui_pointer 9 11
+0........
+00.......
+0P0......
+0Pp0.....
+0Ppp0....
+0Pppp0...
+0Ppppp0..
+0Pppppp0.
+0Ppm0000.
+0pm0.....
+000......
+
+@frames ui_heart 3 9 8
+.000.000. .000.000. .000.000.
+0rrr0rrr0 0rrr02220 044303330
+0rPrrrrr0 0rPrr2220 043333330
+0rrrrrrR0 0rrrr2220 033333330
+.0rrrrR0. .0rrr220. .0333330.
+..0rrR0.. ..0rr20.. ..03330..
+...0R0... ...0R0... ...030...
+....0.... ....0.... ....0....
+
+@sprite ui_check 9 8
+.......vG
+......vGG
+.....vGGv
+G...vGGv.
+GG.vGGv..
+vGGGGv...
+.vGGv....
+..vv.....
+
+@sprite ui_cross 7 7
+rr...rr
+rrr.rrR
+.rrrrR.
+..rrR..
+.rrrrR.
+rrR.rrR
+rR...RR
+
+@sprite ui_paper 24 24
+hhhhQhhhhhhhhhhhhHwwhhh.
+.HhhQhh8hhhhhhhhHhhhwhE,
+..HhQh8EhhhhhhhHhhhhhwE,
+.HhhQ8EhhhhhhhhhhhhhhwE,
+hhhhQEhhhhhhhhhHhhhhhwE,
+iiiiQiiiiiiiiiiiwiiiwiE,
+hhh8QhhhhhhhhhhhhwwwhhE,
+hh8EQhhhhhhhhhhhhhhhhhE,
+hhhhQhhhhhhhhhhhhhhhhhE,
+.HhhQhhhhhhhhhhhhhhhhhE,
+..HhQhhhhhhhhhhhhhhhhhE,
+.HhhQhhhhhhhhhhhhhhhhhE,
+hhhhQhhhhhhhhhhhhhhhhhE,
+iiiiQiiiiiiiiiiiiiiiiiE,
+hhhhQhhhhhhhhhhhhhhhhhE,
+hhhhQhhhhhhhhhhhhhhhhhE,
+hhhhQhhhhhhhhhhhhhhhh8E,
+.HhhQhh8hhhhhhhhhhhh8EE,
+..HhQh8Ehhhhhhhhhhh8EhE,
+.HhhQhEhhhhhhhhhhh8EhhE,
+hhh8QhhhhhhhhhhhhhEhhhE,
+iiiiQiiiiiiiiiiiiiiiiiE,
+HEEEQEEEEEEEEEEEEEEEEEH,
+.,,,,,,,,,,,,,,,,,,,,,,,
+
+@sprite ui_tape 16 7
+..hhhhhhhhhhhhh.
+.EEhEEEEEEhEEEEh
+EEEEEEEEEEEEEEE.
+.EEEEEEhEEEEEEEE
+EEEEEEEEEEEEEEE.
+.HHHHHHHHHHHHHHH
+..,,,,,,,,,,,,,.
+
+@sprite ui_panel 24 24
+..cppppppppppppppppppp..
+.c::::::::::::::::::::p.
+c::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::p
+p::::::::::::::::::::::c
+.p::::::::::::::::::::c.
+..pppppppppppppppppppc..
+
+@sprite ui_arrow 9 9
+....0....
+....00...
+00000X0..
+0XXXXyy0.
+0yyyyyyy0
+0YYYYyY0.
+00000Y0..
+....00...
+....0....
+
+@sprite ui_bag 12 12
+.....00.....
+....0Xo0.00.
+...0Xo0.0gG0
+..0Xo0.0gGv0
+.0hhhhhhhhH0
+.0HhHhHhHhH0
+0wwwwwwwwwW0
+0whwwwwwwwW0
+0whwwwwwwwW0
+0wwwwwwwwWW0
+0WWWWWWWWWW0
+000000000000
+
+@sprite ui_cart 12 12
+00..........
+0r0.........
+.0z00000000.
+..0zzzzzzzz0
+..0z5z5z5z0.
+...0zzzzzz0.
+...0z5z5z0..
+....0zzzz0..
+....000000..
+....0....0..
+...050..050.
+....0....0..
+
+@sprite ui_skull 11 11
+...00000...
+..0888870..
+.088888870.
+.088888860.
+.081181160.
+.071181160.
+..0781860..
+..0677760..
+..0808080..
+..0707070..
+...00000...
+
+@sprite ui_clock 11 11
+...00000...
+..0885870..
+.088818870.
+08888188860
+08888188860
+05888r11850
+07888888860
+07888888760
+.078888760.
+..0765660..
+...00000...
+
+@frames ui_ammo 3 5 9
+..0.. .000. ..0..
+.0o0. 0prR0 .0y0.
+0ooO0 0prR0 .0y0.
+0ooO0 0prR0 0Xyo0
+0XyY0 0prR0 0Xyo0
+0XyY0 0prR0 0yyo0
+0XyY0 0XyY0 0yoO0
+0YYO0 0yYO0 .000.
+.000. .000. .....
+
+@sprite ui_exclaim 5 10
+.000.
+0Xyy0
+0yyo0
+0yoo0
+0ooO0
+.0r0.
+.000.
+0rrR0
+0RRx0
+.000.
+
+@sprite ui_question 7 10
+.00000.
+0XyyyY0
+0y00yY0
+000.0Y0
+...0yY0
+..0yY0.
+..0y0..
+..000..
+..0y0..
+..000..
+
+@frames ui_stars 3 12 6
+..y.......y. .....y...... ........y...
+.yXy.....yXy ....yXy..... .......yXy..
+..y.......y. .....y....y. .y......y...
+......y..... ...y.....yXy yXy......y..
+.....yXy.... ..yXy.....y. .y......yXy.
+......y..... ...y........ .........y..
+
+@sprite ui_hands 12 10
+.0000..0000.
+0sSsS00SsSs0
+0sSsS00SsSs0
+0sSsS00SsSs0
+0ssss00ssss0
+0sssS00Ssss0
+.0sSk00kSs0.
+.0SSk00kSS0.
+.0kkK00Kkk0.
+..000..000..
+
+@sprite ui_key 13 13
+.00000000000.
+0788888888870
+0866666666650
+0866666666650
+0866666666650
+0866666666650
+0866666666650
+0866666666650
+0866666666650
+0755555555540
+0444444444430
+0333333333330
+.00000000000.
+
+@frames ui_mouse 3 11 15
+..0000000.. ..0000000.. ..0000000..
+.077707770. .0PPp07770. .077707pp0.
+07877577760 0pPpp577760 078775Pppm0
+07777477760 0pppp477760 077774pppm0
+07777477760 0pppp477760 077774pppm0
+07777077760 0ppmm077760 077770mmmm0
+00000000000 00000000000 00000000000
+07666666650 07666666650 07666666650
+06666666650 06666666650 06666666650
+06666666650 06666666650 06666666650
+06666666650 06666666650 06666666650
+06666666650 06666666650 06666666650
+.066666650. .066666650. .066666650.
+.055555550. .055555550. .055555550.
+..0000000.. ..0000000.. ..0000000..
+
+@sprite ui_star 7 7
+...X...
+..XyY..
+XXyyyYY
+.XyyyY.
+..yyY..
+.yY.yY.
+.Y...Y.
+
+@frames ui_perk 14 16 16
+................ ................ ................ ................ ................ .....000000..... ................ .......00....... .......0........ ..........000... ................ ..00000........z .............00. ..............;.
+..0000...0000... ......0000...... ................ ................ .......0.0.0.... ...00rrrrrr00... .0000........... ......0rr0...... ......0o0....... .........0zz0.00 ................ ..0yyy0.......z. ............0ww0 .............;..
+.0rrrr0.0rrrr0.. .....0TTTZ0..... ...00000000000.. .....00000000000 ......0s0s0s0... ..0rrrRRRRrrr0.. 088880.......... .0000.0bb0.0000. ......0oo0...... ........0zzz0000 ................ ..0yy0.......z.. ...........0wwn0 ...0..........;.
+0rPPrrr0rrrrrR0. ...0000000000... ..0ss0ss0ss0sS0. .....07777777770 ......0s0s0s00.. .0rrR..rr..Rrr0. .0777800........ .0770.0bB0.0yy0. .....0oyo0...0.. ........0zzzzzz0 .....000000..... .0yy0000...0000. ..........0wwnN0 .00000000000000.
+0rPrrr888rrrrR0. ..0TTTTTTTTTZ0.. ..0sS0sS0sS0SS0. .....07zzzzz0zi0 ......0s0s0s0s0. .0rR...rr...Rr0. ..00008800...... .0rr0.0bB0.0yY0. ....0oyyo0..0o0. .......0zzzzz60. ...0088888800... .0yyyyy0..07rr0. .........0wwnN0. 0455555555555550
+0rrrrr887rrrrR0. ..0TZZZZZZZZZ0.. ..0SS0SS0SS0Sk0. 0000007zzzzzzzi0 ;;;;..0ssssssS0. 0rrR........Rrr0 .0888887800..... .0rR0.0bB0.0yY0. ...0oyyXyo00oo0. ......0zzz660... ..088800008880.. ..000yy0.07rR0.. ........088760.. 0424244444004440
+0rrr8888887rrR0. .00ZZZZ5zZZZV00. .000k0kk0kk0kk0. 0wzwn0zzzzzzzii0 ......0ssssssS0. 0rR....00....Rr0 ..07777780...... 0000000000000000 ...0oyXXyyooyo0. .....0zz60...... .0888bbcbb0880.. ....0y0.07rR0... .......055440... 0333333333333330
+0rrr8888887rrR0. 0T0VVVV050VVV0V0 0sss00000000k0.. 0nnNN0zzzziiiii0 .;;;;;0sssssSS00 0rrrr.0880.rrrr0 ...000077000000. 0wwwwwhhhhwwwwW0 ..0oyX88Xyyyo0.. ....0zz60.0000.. 0888bbc00bb0880. ...0y0.07rR0.... ......088760.... .022222222222220
+.0rr7788777rR0.. 0T0TZZZ050ZZZ0V0 0sssssSSSSSSk0.. 000000ziirRiiii0 ......0SsssSS0s0 0rrrr.0880.rrrr0 ....0887788rr80. 0WWWWWHHHHWWWWn0 ..0oyX888XyyO0.. ...0zz60.07zzz0. 08880bbccbb08880 ...00.07rR0..... .....055440..... ..0wnN0.1.0.....
+..0rrr887rRR0... 0T0ZZZZZZZZZV0V0 0SsssSSSSSSkk0.. .....08rRR88rR80 ..;;;;0SSSSSSs0. 0rR....00....Rr0 ...07888888rrr80 0wwwwwhHHHwwwwW0 ..0oyX888XyyO0.. ..0zz60.07z55zi0 .088880bbbb08880 .....07rR0...... ....088760...... ..0wnN00000.....
+...0rr777RR0.... 0T0Z00000000V0V0 .0SSSSSSSSkkk0.. .....0RxR0R00000 ......0SSSSSS0.. 0rrR........Rrr0 ...0788rr8888880 0wwwwwhHHHwwwwW0 ..0OoyX8XyyoO0.. .0z660.07z5..5i0 ..0888888888880. ....00000....... ...055440....... .0wnNN0.........
+....0rRRRR0..... 0Z0Z0TTTTTZ0V0V0 ..0SSSSSSkkk0... ......R.x.R..... .......0SSSSk0.. .0rR...rr...Rr0. ...07rrr88888880 0wwwwwhHHHwwwwW0 ...0OoyyyyoO0... .0660..0z5....i0 ...0008888800... ....0z0......... ..088760........ .0wnN0..........
+.....0RRx0...... 0Z0Z0ZZZZZV0V0V0 ...0kkkkkkK0.... ......x...x..... .......0kkkkk0.. .0rrR..rr..Rrr0. ...0777777777770 0wwwwwhHHHwwwWW0 ....0OOooOO0.... ..00...0z5....i0 ......000000.... ...0z0.......... .0wnnN0......... 0wnNN0..........
+......0x0....... .00V00000000V00. ....0000000..... ..........R..... ........00000... ..0rrrRRRRrrr0.. ...0222222222220 0WWWWWHHHHWWWWn0 .....000000..... .......0zi5..5i0 ................ .0zzz0.......... 0wnNNN0......... 0nNN0...........
+.......0........ ..0VVVVVVVVVV0.. ................ ................ ................ ...00rrrrrr00... ....00000000000. 0000000000000000 ................ ........0ii55i0. ................ ..000........... 0NNNN0.......... .000............
+................ ...0000000000... ................ ................ ................ .....000000..... ................ ................ ................ .........00000.. ................ ................ .0000........... ................
+
+@sprite ui_portrait 64 64
+1111111111111111111111qqqqqqqqqqqqqqqqqqqq1111111111111111111111
+11111111111111111111qqqqqqqqqqqqqqqqqqqqqqqq11111111111111111111
+111111111111111111qqqqqqqqqqqqqqqqqqqqqqqqqqqq111111111111111111
+11111111111111111qqqqqqqqqqqqqqqqqqqqqqqqqqqqqq11111111111111111
+111111111111111qqqqqqqqqqqqpppppcccccqqqqqqqqqqqq111111111111111
+11111111111111qqqqqqqqqqpmrrrrrxRRRRRRCcqqqqqqqqqq11111111111111
+1111111111111qqqqqqqqqpmrrrrrrrxRRRRxRRRCcqqqqqqqqq1111111111111
+111111111111qqqqqqqqpmRrrrrrrrrxRRRRRxRRRCCcqqqqqqqq111111111111
+11111111111qqqqqqqqpmRRrrrxrrrRxRRRRRRxRRRCCcqqqqqqqq11111111111
+1111111111qqqqqqqqpmRRRrxrrRrRRxRRRRRRRxRRxCCcqqqqqqqq1111111111
+111111111qqqqqqqqpmRRRrrrrrrRRRxRRRRRRRRxRxxCCcqqqqqqqq111111111
+11111111qqqqqqqqpmRRRrrrRxrrrrrrrrRRRRxRRRxxxCCcqqqqqqqq11111111
+11111111qqqqqqqqpmRRRRxrrrxxxxxxxxxxxxRRxRRxxxCcqqqqqqqq11111111
+11111111qqqqqqqpmRRRxrrrx11111111111111xRRxRRxxCcqqqqqqq11111111
+11111111qqqqqqqpmRRxrrrx110NN00000000011xRRxRxxCcqqqqqqq11111111
+1111111qqqqqqqqpmRxrrrx110NnN00NN00N00011xRRxRxCcqqqqqqqq1111111
+1111111qqqqqqqqpmRxrrx110NnnN0NNn0NN0N0011xRRxxCcqqqqqqqq1111111
+1111111qqqqqqqqpmRrrx110NnNkNnN0NkNnN0N0011xRRxCcqqqqqqqq1111111
+111111qqqqqqqqqpmRrrx10NnNSkNnNkSSkNnNSkN01xRRxCcqqqqqqqqq111111
+111111qqqqqqqqqpmRrrx1NnNSSskNSssSSkNSRSkN1xRRxCcqqqqqqqqq111111
+111111qqqqqqqqqpmRrrx1KNSSssSkssssSSkSRSkK1xxRxCcqqqqqqqqq111111
+111111qqqqqqqqqpmRrrx1KkSSSssSsssssSSSxSkK1xRRxCcqqqqqqqqq111111
+111111qqqqqqqqqpmRrrx1KNNNNSsSssssSsSNNNNK1xRxxCcqqqqqqqqq111111
+111111qqqqqqqqqpmRrrx1KkkKNNNkSssSkNNNKKkK1xRRxCcqqqqqqqqq111111
+111111qqqqqqqqqpmRrrx1KkK000KkSssSkK000KKK1xRRxCcqqqqqqqqq111111
+111111qqqqqqqqqpmRrrx1KkPn0n7KSssSK7n0nIkK1xRRxCcqqqqqqqqq111111
+111111qqqqqqqqqpmRrrx1KkkKKKkSSssSSkKKKkKK1xRRxCcqqqqqqqqq111111
+111111qqqqqqqqqpmRrrx1KSkkkkSSSssSSSkkRKSK1xRRxCcqqqqqqqqq111111
+111111qqqqqqqqqpmRrrx1KSS23333333333332SSK1xRRxCcqqqqqqqqq111111
+111111qqqqqqqqqpmRrrx1233222222332111112211xRRxCcqqqqqqqqq111111
+111111111111111pmRrrx1222222202331011131111xRRxCc111111111111111
+1111111qqqqqqqqpmRrrx1224222022221101331111xRRxCcqqqqqqqq1111111
+1111111qqqqqqqqpmRrrx124422022221111011R111xRRxCcqqqqqqqq1111111
+111111111111111pmRrrx112220222211111101xR11xRRxCc111111111111111
+11111111qqqqqqqpmRrrx1112022221001111101111xRRxCcqqqqqqq11111111
+11111111qqqqqqqpmRrrx1110222222411111110111xRRxCcqqqqqqq11111111
+111111111111111pmRRrrx01122222441111111110xRRxxCc111111111111111
+111111111qqqqqpmRRRrrrx012222221111311110xRRxxxxCcqqqqq111111111
+1111111111111pmRRRRrrrrx0132222211111310xRRRxxxxxCc1111111111111
+1111111111qqpmRRRRRRrrrrx01222222111110xRRRxxxxxxxCcqq1111111111
+11111111111pmrrrRRRRrrr7r01322221111310R6RRRxxxxxxxCc11111111111
+111111111pmrrrrrRRRrrrr7Rr012222111110Rx6RRRxxxxxxxxxCc111111111
+11111111pmrrrrrRRRrrrrR7RRr0132211310xRx6xRRRxxxxxxxxxCc11111111
+111111pmrrrVVZVVRRrrrrR7RRRr01221110xRRx6xRRRRxxVVVVVxxxCc111111
+11111pmrrrrTZZZVxRrrrrx7RRRRr013110xRRRx6xRRRRRRTZZVVxxxxCc11111
+1111pmrrrRRTZRZVxRrrRrR7RRRRRr0210xRRRRx6xRRRRRRTZZVVxxxxxCc1111
+111pmrrrRRRRxZZZVxRxrrR7RRRRRRr00xRRRRRx6xRRRRRTZZVVxxxxxxxCc111
+11pmrrrRRRRRTZZZVxRrrxR7RRRRRRRxxRRRRRRx6xRRRRRTZZVVxxxRxxxxCc11
+11pmrrRRRRRRTZZZVxRrrRR7RRRRRxrRRRxRRRRx6xRRRRRTZZVVxxxRxxxxCc11
+1pmrrRRRRRRRTZZZVxRrRxR7RRRRxrRRRRRxRRRx6xRRRRRTZZVVxxxxRxxxxCc1
+pmrrRRRRRRRRTZZZVxRRxRRzRRRxrRRRRRRRxRRx5xRRRRRTZZVVxxxxRxxxxxCc
+pmrRRRRRRRRRTZZZVxRxRRRzRRxrRRRRRRRRRxRx5xRRRRRTZZVVxxxxxRxxxxCc
+pmRRRRRRRRxRTZZZVxxRRRRRRxRRRRRRRRRRRRxxxxRRRRRTZZVVxxxxxRxxxxCc
+pmRRRRRRRRxRTZZZVxRRRRRRRRRRRRRRRRRRRRRxxxRRRRRTZZVVxxxxxxRxxxCc
+pmRRRRRRRxRR6zzz5xRRRRRRRRRRRRRRRRRRRRRxxxRRRRR6zz55xxxxxxRxxxCc
+pmRRRRRRRxRRz0005xRRRRRRRRRRRRRRRRRRRRRxxxRRRRRz0005xxxxxxxxxxCc
+pmRRRRRRxRRR6zzz5xRRRRRRRRRRRRRRRRRRRRRxxxRRRRR6zz55xxxxxxxxxxCc
+pmRRRRRRxRRRTZZZVxRRRRRRRRRRRRRRRRRRRRRxxxRRRRRTZZVVxxxxxxxxxxCc
+pmRRRRRRRRRRRTZZZVxRRRRRRRRRRRRRRRRRRRRxxxRRRRTZZVVxxxxxxxxxxxCc
+pmRRRRRRRRRRRTZZZVxRRRRRRRRRRRRRRRRRRRRxxxRRRRTZZVVxxxxxxxxxxxCc
+pmRRRRRRRRRRRTZZZVxRRRRRRRRRRRRRRRRRRRRxxxRRRRTZZVVxxxxxxxxxxxCc
+pmRRRRRRRRRRRTZZZVxRRRRRRRRRRRRRRRRRRRRxxxRRRRTZZVVxxxxxxxxxxxCc
+pmRRRRRRRRRRRTZZZVxRRRRRRRRRRRRRRRRRRRRxxxRRRRTZZVVxxxxxxxxxxxCc
+pmRRRRRRRRRRRTZZZVxRRRRRRRRRRRRRRRRRRRRxxxRRRRTZZVVxxxxxxxxxxxCc
+
+@sprite ui_radio 32 32
+.........00.....................
+........0320....................
+........0320....................
+........0320....................
+........0320......0000..........
+........0320.....055540.........
+........0320.....054540.........
+.......043220....054540.........
+.......000000000000000000.......
+......03333333333333333330......
+.....032222222222222222r210.....
+....00322111111111111112210.....
+...0r0322100000000000032210.....
+...0r0322122222222222232210.....
+...0r0322100000000000032210.....
+...0r0322122222222222232210.....
+...0r0322100000000000032210.....
+...0r0322133333333333332210.....
+...0r0322222222222222222210.....
+...0r0322000000000000002210.....
+.....03220tttttttttttt02210.....
+.....03220tttctccctccc02210.....
+.....03220ttcctctctttc02210.....
+.....03220tccctccctttc02210.....
+.....0322000000000000002210.....
+.....0322222222222222222210.....
+.....032hhhhhhhhhhhhhhhh210.....
+.....032E1E11E1EE111E1EE210.....
+.....032HHHHHHHHHHHHHHHxR10.....
+.....03222222222222222xRx10.....
+.....0111111111111111111x0......
+......0000000000000000000.......
+
+@sprite ui_van 16 16
+................
+................
+................
+..000000000.....
+.0777777777000..
+.0C8CCCCCCC0JJ0.
+.0CCCCC1CCC0jJJ0
+.0CCCCCCCCC0jjj0
+.0ooooooooooooo0
+.0CCFCCCCCCCCCy0
+.0ttFFttttttttt0
+.0t0110ttt0110t0
+.001551000155100
+...0110...0110..
+....00.....00...
+................
+
+@sprite ui_logo 160 40
+................................................................................................................................................................
+............00..................................................................................................................................................
+...........0lg0.................................................................................................................................................
+.....0000.0lgv0.................................................................................................................................................
+...00GGGG00Gv0.......00000000000000.....0000000000000..00000000000000000.........00000000000000...00000000...0000000000000..0000000.........000000000000000.....
+..00G0000GG00.......00000000000000000..00000000000000000000000000000000000......00000000000000000000000000000000000000000000000000000......000000000000000000...
+..0G0PPPP00G0......000PPPPPPPPPPPP0000000PPPP00PPPPP0000PPPP0PPPPPPPP0000C0....000PPPPPPPPPPPP00000PPPPPP00000PPPPPPPPPPP0000PPPPP00C0.....00PPPPPPPPPPPPP00C0..
+..0Gvpppp00CC0....000Ppppppppppppppp0000Ppppppppppppp000Pppp0mpppppppp000CC0..000Ppppppppppppppp000Pppppp0000Ppppppppppppp000Ppppp00CC0....00Ppppppppppppp00CC0.
+.000Ppppp00CC0....00Pppppppppppppppp000Pppppppppppppp000Ppppp0ppppppppp00CC0..00Pppppppppppppppp000Pppppp000Pppppppppppppp000Ppppp00CC0....00Ppppppppppppp00CC0.
+0lg0Ppppp00CC0....00Pppppppppppppppp000Pppppppppppppp000Ppppp0mpppppppp00CC0..00Pppppppppppppppp000Pppppp000Pppppppppppppp000Ppppp00CC0....00Ppppppppppppp00CC0.
+0Gv0Ppppp00CC0....00Pppppppppppppppp000Pppppppppppppp000Pppppp0mppppppp00CC0..00Pppppppppppppppp000Pppppp000Pppppppppppppp000Ppppp00CC0....00Ppppppppppppp00CC0.
+.000Ppppp00CC0....00Ppppp000000Ppppp000Ppppp0000Ppppp00000000Pp0pp0000000CC0..00Ppppp000000Ppppp000Pppppp000Ppppp0000Ppppp000Ppppp00CC0....00Ppppp0000000000CC0.
+.0G0Ppppp00CC0....00Ppppp0CCCC0Ppppp000Ppppp0000Ppppp00000000Pp0mp000000CCC0..00Ppppp0CCCC0Ppppp000Pppppp000Ppppp0000Ppppp000Pp0pp00CC0....00Ppppp000000000CCC0.
+..0Gvpppp00CC0....00Ppppp0C...0Ppppp000Ppppp00000000000CCCC00Ppp0p00CCCCCCC0..00Ppppp0C...0Ppppp000Pppppp000Ppppp000000000000Pp0pp00CC0....00PP0mp0000000CCCCC0.
+..00Gvppp00CC0....00Ppppp0C...0Ppppp000Ppppp0000000000CCCCC00Ppp0m00CCCCCC0...00Ppppp0C...0Ppppp000Pppppp000Ppppp000000000000Ppppp00CC0....00P00mp00000000CCC0..
+..00PGvpp00CC0....00Ppppp0C...0Ppppp000PppppPPPPPPPP000CC0000Ppppp00CC0000....00Ppppp0C...0Ppppp000Pppppp000Pppp0PPPPPPPP0000Ppppp00CC0....00PmmppPPPPPP00C00...
+..00PpGvp00CC0....00Ppppp000000Ppppp000Pppppppppppppp00C0..00Ppppp00CC0.......00Ppppp000000Ppppp000Pppppp000Ppppm00ppppppp000Ppppp00CC0....00Ppppppppppp00CC0...
+..00P0pGv00CC0....00PppppPPPPPPppppp000Pppppppppppppp00CC0.00Ppppp00CC0.......00PppppPPPPPPppppp000Pppppp000Ppppppm00ppppp000Ppppp00CC0....00Ppppppppppp00CC0...
+..000l0pG00CC0....00Pppppppppppppppp000Pppppppppppppp00CC0.00Ppppp00CC0.......00Pppppppppppppppp000Pppppp000Ppppppppm0pppp000Ppppp00CC0....00Ppppppppppp00CC0...
+..000g0ppG0CC0....00Pppppppppppppppp0000ppppppppppppp00CC0.00Ppppp00CC0.......00Pppppppppppppppp000Pppppp0000ppppppppppppp000Ppppp00CC0....00Ppppppppppp00CC0...
+..00P0pppG0CC0....00Pppppppppppppppp000000000000Ppppp00CC0.00Ppppp00CC0.......00Pppppppppppppppp000Pppppp000000000000Ppppp000Ppppp00CC0....00Ppppp00000000CC0...
+..00PpppG00CC0....00Ppppp000000PpP0m000000000000Ppppp00CC0.00Ppppp00CC0.......00Ppppp000000Ppppp000Pppppp000000000000Ppppp000Ppppp00CC0....00Ppppp0000000CCC0...
+.000PppGv00000000000Ppppp000000Pp00m000Ppppp0000Ppppp00CC0.00Ppppp00CC0.......00Ppppp000000Ppppp000Pppppp000Ppppp0000Ppppp000Ppppp00000000000Ppppp000000000C0...
+0lg0PpGvp00000000000Ppppp00CC00Ppmmp000Ppppp0000Ppppp00CC0.00Ppppp00CC0.......00Ppppp00CC00Ppppp000Pppppp000Ppppp0000Ppppp000Ppppp00000000000Ppppp00000000000...
+0Gv0PGvppPPPPPPPP000Ppppp00CC00Ppppp000PppppPPPPppppp00CC0.00Ppppp00CC0.......00Ppppp00CC00Ppppp000Pppppp000PppppPPPPppppp000PppppPPPPPPPP000PppppPPPPPPP000C0..
+.000Gvppppppppppp000Ppppp00CC00Ppppp000Pppppppppppppp00CC0.00Ppppp00CC0.......00Ppppp00CC00Ppppp000Pppppp000Pppppppppppppp000Ppppppppppppp000Pppppppppppp000CC0.
+..0Gvmmmmmmmmmmmm000mmmmm00CC00mmmmm000mmmmmmmmmmmmmm00CC0.00mmmmm00CC0.......00mmmmm00CC00mmmmm000mmmmmm000mmmmmmmmmmmmmm000mmmmmmmmmmmmm000mmmmmmmmmmmmm00CC0.
+.0G0mmmmmmmmmmmmm000mmmmm00CC00mmmmm000mmmmmmmmmmmmmm00CC0.00mmmmm00CC0.......00mmmmm00CC00mmmmm000mmmmmm000mmmmmmmmmmmmmm000mmmmmmmmmmmmm000mmmmmmmmmmmmm00CC0.
+.0G0mmmmmmmmmmmmm000mmmmm00CC00mmmmm0000mmmmmmmmmmmm000CC0.00mmmmm00CC0.......00mmmmm00CC00mmmmm000mmmmmm0000mmmmmmmmmmmm0000mmmmmmmmmmmmm000mmmmmmmmmmmmm00CC0.
+.0G000mm00000mm000000mm0000CC000mm0000000000mm00000000CCC0.0000mm000CC0.......000mm0000CC000mm0000000000000000000mm000000000000mm00000mm000000000000mm000000CC0.
+.0G000mm000000m000C00mm000CCC000m0000CC00000pm0000000CCCC0..000m000CCC0........00mm000CCC000m0000C00000000CC00000pm0000000CC000mm000000m000C00000000mm00000CCC0.
+0l0G00pm00CC00000CC00mm00CCCC000000CCCCCCC00mm00CCCCCCCC0...000000CCCC0........00mm00CCCC000000CCCCCCCCCCCCCCCC00mm00CCCCCCCC00pm00CC00000CCCCCCCC00pm00CCCCCC0.
+0G0G00mm00CCC000CCC00pm00CCC0..000CCCCC00C000m00CCCCCCC0.....0000CCCC0.........00pm00CCC0..000CCCCC0CCCCCCCC00C000m00CCCCCCC000mm00CCC000CCCC0CCCC00mm00CCCCC0..
+.00G000m00CC00CCCCC00mm00CC0...0CCCCC00..0000000CC00000.......0CCCCC0..........00mm00CC0...0CCCCC00.00000000..0000000CC00000.000m00CC00CCCCC0.000000mm00CC000...
+.0G0.00000CC0.0CCC0000m00CC0....0CCC0......0000CCC0............0CCC0...........000m00CC0....0CCC0...............0000CCC0......00000CC0.0CCC0......000m00CC0.....
+.0G0.0000CCC0..000..00000CC0.....000........0CCCCC0.............000.............00000CC0.....000.................0CCCCC0......0000CCC0..000........00000CC0.....
+.0G0..0CCCCC0.......0000CCC0.................0CCC0..............................0000CCC0..........................0CCC0........0CCCCC0.............0000CCC0.....
+.0G0...0CCC0.........0CCCCC0..................000................................0CCCCC0...........................000..........0CCC0...............0CCCCC0.....
+0G0.....000...........0CCC0.......................................................0CCC0..........................................000.................0CCC0......
+0G0....................000.........................................................000................................................................000.......

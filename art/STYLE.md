@@ -6,9 +6,15 @@ the `art/*.art` text files (one character = one pixel, colours from
 in Aseprite — deliberate clusters, clean silhouettes, intentional shading.
 
 ## The look
-* **Hotline Miami meets overgrown ruins.** Strict top-down (bird's-eye) view,
-  bold readable silhouettes, saturated accents (neon pink / cyan / yellow,
-  blood red) against grimy desaturated urban tones and creeping greens.
+* **A dead supermarket, three winters on.** Strict top-down (bird's-eye) view,
+  bold readable silhouettes, sun-bleached retail colours (price-tag yellow,
+  clearance-sticker red, cardboard, receipt paper) and blood red against grimy
+  desaturated urban tones and creeping greens.
+* **The grid is dark - nothing glows by itself.** Light comes from holes in the
+  roof, fires, flashlights and the odd generator: warm amber, never neon. No
+  hot pink / cyan pairings, no synthwave sunsets, no purple night tints.
+* The screen is graded like an old print: warm, lifted blacks, film grain. The
+  camera stays level (no idle sway); only heavy shake tilts it.
 * Light comes from the **top-left**: highlights on top/left edges, shade on
   bottom/right. Keep it consistent across all sprites.
 * Characters, weapons and items get a **1px dark outline** (`0` or `1`).
@@ -85,6 +91,46 @@ Archetypes:
 | feral  | bare skin with war paint, wild long hair, bone necklace | skin `s S k`, paint `c`, hair `N 0` |
 | boss   | "The Mall King" (32x32): purple fur coat, golden crown made of cans, huge | `u U q`, crown `y Y X` |
 
+### The Greenhouse people (`characters.art`)
+The camp between the stores: one `_idle` torso each (nobody fights there), gunner proportions, no backpack, plus
+`legs_*` (mostly `@swap`s of `legs_player`). Rosa: mustard cardigan `y Y n`, grey bun `7 6 5`. Gus: blue overalls
+`B d D`, red cap with the brim forward. June: olive jacket under a wide tan hat `h w W`. Big Dee: a `@swap` of the
+brute - grey vest, bald head, no mask. Marta: green cardigan, red headscarf. Theo is six: a small torso inside the
+24x24 canvas, yellow/blue stripes, his own short `legs_theo`. The neighbours (`folk_a/b/c`) are recoloured cuts.
+Camp props (`props.art`): the weight bench and rack, Gus's workbench and scrap pile, the range's bullseye board
+(`p_target`, icon-style like the items), the course flags (`p_flag`, 2 flutter frames, pivot at the pole's foot) and
+Theo's sickbed. `wt_glass` is the greenhouse wall (same autotile layout as `wt_mall`), `o_crop` the beds.
+
+### Animals (`animals.art`, pivot = body centre)
+Dogs and foxes on a 24x24 canvas, cats and rats on 16x16, seen from directly above and facing
+right like everyone else; legs are short nubs at the corners of the body. Each has `_walk` (4
+strides), `_bite` ([0] crouched to spring, [1] the lunge with the jaws open), `_rest` (lying
+down) and `_dead` ([0] on its side, [1] torn up). Coats (`dog2`, `cat3`...) and the rabid
+versions (`*r`) are `@swap` copies, so the base art keeps a few colours to itself: eyes are `2`
+(red when rabid), the muzzle `3` and a cat's or rat's nose `P` (foam), a dog's collar `L`.
+Rabid animals are darker and mangy, so the red eyes and the foam read at a glance.
+
+### Plants (`plants.art`)
+Mutated vegetation seen from directly above, with a 1px dark outline (`1`) so it holds on grass, dirt and lino.
+Leaves are 2–4 greens (`g G v V`); a few pale `l` veins and olive `T` tips make them sickly, never neon.
+* **Rooted plants** (spitter, nettle) are two layers: a still `_base` leaf rosette (16x16, pivot 8,8 = the stalk,
+  never rotated; its 2 frames are variants, not an animation) and a `_head` drawn on top that the engine turns
+  towards its prey. Heads face RIGHT: the stalk leaves the rosette at the head pivot (5,8), i.e. the 2x2 at
+  x4–5 / y7–8, and everything grows to the right of it. Heads must read at any angle, so states differ in
+  silhouette and colour, not in small details.
+* **Spitter**: broad 5-leaf rosette, dark centre. Head = a bloom (`y Y O`) on a green pod: [0] shut green bud,
+  [1] open with a dark throat (`x R 0`), [2] swollen pale pod (`l g`, seam veins) with the throat glowing `X`,
+  [3] squeezed, petals flared, spit leaving the mouth at x14–15.
+* **Nettle**: a jagged X of serrated dark leaves with a lighter young pair on top; pale stinging hairs `E` replace
+  outline pixels at the teeth and tips. Tendrils are brighter `g G` so they separate from the leaves, 2px near the
+  base thinning to 1px, barbs `E` on the outline, hooked red tip `r R`.
+* **Rambler** (walks): leafy body shaded like `p_bush` (clumps lit on the upper-left, dark crescent lower-right),
+  roses `Q P m`, and its face on the RIGHT: a dark thorny maw (`x 0`, `E` teeth) flanked by thorny vines `n N`.
+  Root-legs `n N` with pale `W` toes trot like the dog. `_rest` has to pass for a `p_bush` (bigger, flat dark root
+  nubs, baked `,` shadow, drawn unrotated); only a bloom or a thorn gives it away.
+* `_dead`: flattened, torn and wilted (`T W N H`), with sap droplets. Sap FX (`fx_sap*`, `fx_spit`, `fx_leaf`) are
+  the plants' blood: `v` rim, `G` body, `g` fresh, `l` highlight.
+
 ### Weapons (`w_*`, pointing right, pivot = grip)
 Drawn horizontally, handle on the left. The pivot point in the manifest is
 where the hand grips — the handle must be at that pixel. Real-world objects
@@ -137,7 +183,7 @@ glass doors along the bottom edge ([0] stocked, [1] empty, door ajar).
 `p_counter` checkout [0] left end, [1] belt middle, [2] right end.
 Cars/van: top-down, nose pointing UP. Signs: chunky pixel lettering of the
 store name (QUICK STOP / FRESHWAY / BUILD-RITE / MEDIMART / MEGAMART /
-PARADISE MALL), faded paint or dead neon, cracked.
+PARADISE MALL), faded paint, rust or dead marquee bulbs, cracked.
 
 ### FX
 Blood is the star: rich `r R x` splats with irregular, organic edges and a few
@@ -145,6 +191,24 @@ satellite droplets. Gibs are small, chunky and readable. Explosions are bold
 cartoony bursts (yellow-white core -> orange -> red -> dark smoke).
 
 ### UI
-Sharp, neon-edged, Hotline-Miami flavoured. `ui_paper` is a crumpled notebook
-page 9-slice (8px corners). `ui_panel` a dark translucent panel with 1px neon
-edge 9-slice. The font must be crisp and highly legible.
+Built from a store's paperwork: shopping lists, price stickers, receipts,
+masking tape, marker, rubber stamps. The code draws stickers (`gfx_sticker`),
+highlighter swipes for selections (`gfx_marker`) and stamps (`gfx_ring`,
+`gfx_text_rot`); text never colour-cycles or waves. `ui_paper` is a crumpled
+notebook page 9-slice (8px corners). `ui_panel` a dark translucent board with a
+cardboard edge and masking tape on two corners. The font must be crisp and
+highly legible.
+
+### Cutscenes (`cutscenes.art`)
+The story between the stores is drawn **side-on, like a picture book**, at the same 1:1 pixel scale as the
+game (480x270, letterboxed to 480x208). Scenes are built from layers the engine scrolls at different speeds:
+* `cs_sky` frames are 4px columns tiled across the screen; solid bands with short 25/50/75% dither seams.
+* Far-to-near layers (`cs_city`, `cs_hills`, `cs_roadside`, `cs_downtown`, `cs_road`, `cs_street`, `cs_ground`,
+  `cs_weeds`) repeat horizontally and are **tinted per shot** by the engine (dusk, rain, night...), so paint
+  them in neutral daylight values. `cs_weeds` and `cs_hills` are silhouettes and end up nearly black.
+* The Greenhouse is drawn in layers so people can stand behind the window bars: `_glass` (glazing and what's
+  behind it), `_lit` (the same glass glowing warm, drawn at any strength by sections), `cs_folk` silhouettes,
+  then `cs_greenhouse` (frames, walls, repairs) on top. `_snow` and `_spring` dress the same building.
+* Light from the top-left; no outlines on backdrops, 1px dark outlines on props and people (the van, the
+  crown, the seed packets) so they hold against busy layers.
+

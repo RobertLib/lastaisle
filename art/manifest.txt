@@ -14,6 +14,47 @@ player_down   1 32 32 16 16
 player_dead   3 32 32 16 16
 legs_player   4 24 24 12 12
 
+# the crew: the player's camp gear in their own colours (palette swaps)
+hollis_idle   1 24 24 12 12
+hollis_1h     1 24 24 12 12
+hollis_2h     1 24 24 12 12
+hollis_punch  2 24 24 12 12
+hollis_down   1 32 32 16 16
+hollis_dead   3 32 32 16 16
+legs_hollis   4 24 24 12 12
+
+bex_idle      1 24 24 12 12
+bex_1h        1 24 24 12 12
+bex_2h        1 24 24 12 12
+bex_punch     2 24 24 12 12
+bex_down      1 32 32 16 16
+bex_dead      3 32 32 16 16
+legs_bex      4 24 24 12 12
+
+ozzie_idle    1 24 24 12 12
+ozzie_1h      1 24 24 12 12
+ozzie_2h      1 24 24 12 12
+ozzie_punch   2 24 24 12 12
+ozzie_down    1 32 32 16 16
+ozzie_dead    3 32 32 16 16
+legs_ozzie    4 24 24 12 12
+
+carmen_idle   1 24 24 12 12
+carmen_1h     1 24 24 12 12
+carmen_2h     1 24 24 12 12
+carmen_punch  2 24 24 12 12
+carmen_down   1 32 32 16 16
+carmen_dead   3 32 32 16 16
+legs_carmen   4 24 24 12 12
+
+wes_idle      1 24 24 12 12
+wes_1h        1 24 24 12 12
+wes_2h        1 24 24 12 12
+wes_punch     2 24 24 12 12
+wes_down      1 32 32 16 16
+wes_dead      3 32 32 16 16
+legs_wes      4 24 24 12 12
+
 scav_idle     1 24 24 12 12
 scav_1h       1 24 24 12 12
 scav_2h       1 24 24 12 12
@@ -79,6 +120,105 @@ boss_down     1 48 48 24 24
 boss_dead     1 48 48 24 24
 legs_boss     4 32 32 16 16
 
+# the Greenhouse: camp people (one standing pose each, nobody fights there)
+rosa_idle     1 24 24 12 12
+legs_rosa     4 24 24 12 12
+theo_idle     1 24 24 12 12
+legs_theo     4 24 24 12 12
+gus_idle      1 24 24 12 12
+legs_gus      4 24 24 12 12
+june_idle     1 24 24 12 12
+legs_june     4 24 24 12 12
+dee_idle      1 24 24 12 12
+legs_dee      4 24 24 12 12
+marta_idle    1 24 24 12 12
+legs_marta    4 24 24 12 12
+folk_a_idle   1 24 24 12 12
+legs_folk_a   4 24 24 12 12
+folk_b_idle   1 24 24 12 12
+legs_folk_b   4 24 24 12 12
+folk_c_idle   1 24 24 12 12
+legs_folk_c   4 24 24 12 12
+
+# ================================================================= animals.art
+# Seen from above facing RIGHT, pivot = body centre. _walk 4 strides, _bite [0] crouch [1] lunge,
+# _rest lying down, _dead [0] on its side [1] torn up. dog2/dog3, cat2/cat3: other coats; *r: rabid.
+dog_walk      4 24 24 12 12
+dog_bite      2 24 24 12 12
+dog_rest      1 24 24 12 12
+dog_dead      2 24 24 12 12
+
+dog2_walk     4 24 24 12 12
+dog2_bite     2 24 24 12 12
+dog2_rest     1 24 24 12 12
+dog2_dead     2 24 24 12 12
+
+dog3_walk     4 24 24 12 12
+dog3_bite     2 24 24 12 12
+dog3_rest     1 24 24 12 12
+dog3_dead     2 24 24 12 12
+
+dogr_walk     4 24 24 12 12
+dogr_bite     2 24 24 12 12
+dogr_rest     1 24 24 12 12
+dogr_dead     2 24 24 12 12
+
+cat_walk      4 16 16 8 8
+cat_bite      2 16 16 8 8
+cat_rest      1 16 16 8 8
+cat_dead      2 16 16 8 8
+
+cat2_walk     4 16 16 8 8
+cat2_bite     2 16 16 8 8
+cat2_rest     1 16 16 8 8
+cat2_dead     2 16 16 8 8
+
+cat3_walk     4 16 16 8 8
+cat3_bite     2 16 16 8 8
+cat3_rest     1 16 16 8 8
+cat3_dead     2 16 16 8 8
+
+catr_walk     4 16 16 8 8
+catr_bite     2 16 16 8 8
+catr_rest     1 16 16 8 8
+catr_dead     2 16 16 8 8
+
+fox_walk      4 24 24 12 12
+fox_bite      2 24 24 12 12
+fox_rest      1 24 24 12 12
+fox_dead      2 24 24 12 12
+
+foxr_walk     4 24 24 12 12
+foxr_bite     2 24 24 12 12
+foxr_rest     1 24 24 12 12
+foxr_dead     2 24 24 12 12
+
+rat_walk      4 16 16 8 8
+rat_bite      2 16 16 8 8
+rat_rest      1 16 16 8 8
+rat_dead      2 16 16 8 8
+
+ratr_walk     4 16 16 8 8
+ratr_bite     2 16 16 8 8
+ratr_rest     1 16 16 8 8
+ratr_dead     2 16 16 8 8
+
+# ================================================================== plants.art
+# Mutated vegetation seen from above. Rooted ones are a still _base (leaf rosette) under a _head the
+# engine turns towards its prey (drawn facing RIGHT, pivot = where the stalk leaves the rosette).
+# spitter_head [0] shut bud [1] open, watching [2] swollen, about to spit [3] spitting
+# nettle_head  [0] tendrils coiled [1] reared back [2] the lash, fully out [3] coming back
+# rambler (walks): _walk 4 steps on its roots, _bite [0] bristling [1] the lash, _rest rooted - just a bush
+spitter_base  2 16 16 8 8
+spitter_head  4 16 16 5 8
+spitter_dead  1 16 16 8 8
+nettle_base   2 16 16 8 8
+nettle_head   4 40 16 5 8
+nettle_dead   1 16 16 8 8
+rambler_walk  4 24 24 12 12
+rambler_bite  2 32 24 12 12
+rambler_rest  1 24 24 12 12
+rambler_dead  1 24 24 12 12
 # ================================================================= weapons.art
 # Held/floor sprites pointing RIGHT, pivot = grip point.
 w_broom       1 26 7 5 3
@@ -151,6 +291,9 @@ i_barbedwire  1 16 16 8 8
 i_gunpowder   1 16 16 8 8
 i_hacksaw     1 16 16 8 8
 i_vodka       1 16 16 8 8
+i_scrap       1 16 16 8 8
+i_springs     1 16 16 8 8
+i_whetstone   1 16 16 8 8
 i_ammo9       1 16 16 8 8
 i_shells      1 16 16 8 8
 i_rifleammo   1 16 16 8 8
@@ -207,6 +350,7 @@ wt_brick        1 32 48 0 0
 wt_mall         1 32 48 0 0
 wt_hedge        1 32 48 0 0
 wt_ruin         1 32 48 0 0
+wt_glass        1 32 48 0 0
 # Storefront glass, pivot 0,0
 t_glass_h        1 16 16 0 0
 t_glass_v        1 16 16 0 0
@@ -223,6 +367,7 @@ o_leaves      3 16 16 8 8
 o_rubble      2 16 16 8 8
 o_stain       3 16 16 8 8
 o_roots       2 16 16 8 8
+o_crop        4 16 16 8 8
 
 # =================================================================== props.art
 # Tile props 16x16 pivot 0,0 (drawn at tile origin)
@@ -254,6 +399,7 @@ p_lamppost       1 16 16 0 0
 p_clothes_rack   1 16 16 0 0
 p_mannequin      1 16 16 0 0
 p_tv             1 16 16 0 0
+p_weights        1 16 16 0 0
 # Larger props, pivot 0,0 (top-left)
 p_freezer        2 32 16 0 0
 p_desk           1 32 16 0 0
@@ -271,6 +417,11 @@ p_fountain       1 48 48 0 0
 p_car            3 32 48 0 0
 p_car_burnt      1 32 48 0 0
 p_van            1 36 56 0 0
+p_benchpress     1 32 24 0 0
+p_workbench      1 32 16 0 0
+p_scrap          1 32 24 0 0
+p_sickbed        1 24 32 0 0
+p_grave          1 16 24 0 0
 p_sign_quickstop 1 64 16 0 0
 p_sign_market    1 64 16 0 0
 p_sign_hardware  1 64 16 0 0
@@ -287,6 +438,8 @@ p_door           1 16 4 1 2
 p_door_glass     1 16 4 1 2
 p_tire           1 12 12 6 6
 p_loot_glint     4 8 8 4 4
+p_target         1 16 16 8 8
+p_flag           2 16 16 5 14
 
 # ====================================================================== fx.art
 fx_blood       6 16 16 8 8
@@ -311,6 +464,10 @@ fx_dust        3 8 8 4 4
 fx_scorch      2 32 32 16 16
 fx_impact      3 8 8 4 4
 fx_shadow      1 16 10 8 5
+fx_spit        2 7 7 3 3
+fx_sap         3 16 16 8 8
+fx_sap_drip    4 4 4 2 2
+fx_leaf        3 6 6 3 3
 
 # ====================================================================== ui.art
 ui_cursor      1 15 15 7 7
@@ -339,9 +496,60 @@ ui_radio       1 32 32 0 0
 ui_van         1 16 16 0 0
 ui_star        1 7 7 3 3
 ui_logo        1 160 40 80 20
+ui_stat        3 11 11 0 0
 
 # ==================================================================== font.art
 # font_small: ASCII 32..126, cell 6x9, cap height 7 (rows 0-6), descenders rows 7-8
 # font_big:   ASCII 32..95,  cell 10x12, cap height 11 (rows 0-10)
 font_small    95 6 9 0 0
 font_big      64 10 12 0 0
+
+# =============================================================== cutscenes.art
+# side-on picture-book shots; pivot top-left unless noted
+cs_sky                8   4 270 0 0
+cs_city               1 480  80 0 0
+cs_city_lit           1 480  80 0 0
+cs_hills              1 240  56 0 0
+cs_moon               1  18  18 0 0
+cs_sun                1  24  24 0 0
+cs_greenhouse         1 288 112 0 0
+cs_greenhouse_glass   1 288 112 0 0
+cs_greenhouse_lit     1 288 112 0 0
+cs_greenhouse_snow    1 288 112 0 0
+cs_greenhouse_spring  1 288 112 0 0
+cs_folk               8  16  20 0 0
+cs_ground             3 160  40 0 0
+cs_van                1  86  40 0 0
+cs_wheel              4  16  16 8 8
+cs_road               1 128  48 0 0
+cs_weeds              2 192  40 0 0
+cs_pole               1  24 150 0 0
+cs_roadside           1 320  96 0 0
+cs_aisle              1 480 208 0 0
+cs_scav               3  10  22 0 0
+cs_downtown           1 320 128 0 0
+cs_street             1 128  44 0 0
+cs_car                2  76  30 0 0
+cs_bedtree            1  40  44 0 0
+cs_traffic            1  72 104 0 0
+cs_deer               2  28  26 0 0
+cs_crow               3  12   8 0 0
+cs_weed               5  12  16 0 0
+cs_wood               1  64  48 0 0
+cs_pencil             1  40   7 0 3
+cs_lantern            3  26  26 13 13
+cs_hero_back          2  40  64 0 0
+cs_foodcourt          1 480 208 0 0
+cs_crown              1  26  20 13 10
+cs_can                2   9  10 0 0
+cs_dash               1 480  84 0 0
+cs_pillar             1  64 220 0 0
+cs_mirror             1  48  18 0 0
+cs_freshener          1  10  20 5 0
+cs_seeds              3  30  40 0 0
+cs_soil               1 160  60 0 0
+cs_glasswall          1 160 176 0 0
+cs_sprout             6  16  26 0 0
+cs_tag                1   6  18 0 0
+cs_hero_sit           2  44  48 0 0
+cs_tomato             2  30  66 0 0

@@ -40,6 +40,12 @@ typedef enum {
     SFX_FOOTSTEP,       /* soft step on hard floor */
     SFX_ALERT,          /* "!" spotted stinger */
     SFX_SURRENDER,      /* "please don't" - nervous whimper / short descending blip */
+    /* animals (callers pitch them per species) */
+    SFX_BARK,           /* one rough "wuf" */
+    SFX_GROWL,          /* low rattling snarl */
+    SFX_YELP,           /* high hurt yelp (yowl / squeak when pitched up) */
+    SFX_HISS,           /* cat spit + hiss */
+    SFX_BITE,           /* jaws snapping shut */
     /* world */
     SFX_DOOR_SLAM,
     SFX_DOOR_CREAK,
@@ -68,6 +74,11 @@ typedef enum {
     SFX_GAME_OVER,      /* run over sting (~2.5 s) */
     SFX_HEARTBEAT,      /* single low heartbeat (looped by caller at low HP) */
     SFX_PERK,           /* perk chosen: shimmering chord */
+    /* plants (at the end: each sound's variations are seeded by its id, so the ones above keep theirs) */
+    SFX_SPIT,           /* a flower spitting a glob of acid: wet "ptuh" */
+    SFX_SPLAT,          /* the glob landing: small wet splat, a little acid sizzle */
+    SFX_LASH,           /* a stinging tendril whipping: fast swish ending in a crack */
+    SFX_RUSTLE,         /* leaves and twigs shaking (a bush walking, waking, getting hit) */
     SFX_COUNT
 } SfxId;
 
@@ -90,6 +101,7 @@ typedef enum {
     MUS_BOSS,       /* boss fight, ~140 bpm */
     MUS_SAFEHOUSE,  /* calm warm ambient between levels, ~80 bpm */
     MUS_ENDING,     /* melancholic -> hopeful, credits */
+    MUS_STORY,      /* the intro: sparse keys over a drone, ~70 bpm */
     MUS_COUNT
 } MusicId;
 

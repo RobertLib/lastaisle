@@ -3,17 +3,21 @@
 #include "gfx.h"
 #include "input.h"
 #include "audio.h"
+#include "game.h"
+#include "hub.h"
 
 Actor *player(void) { return &W.actors[0]; }
 
 static int search_ci = -1;
 static float search_t = 0;
+static float saw_noise_t = 0;   /* next chainsaw noise event */
 float g_search_progress = 0;   /* read by the HUD */
 int g_search_cont = -1;
 
 void actor_reset_level_state(void) {
     search_ci = -1;
     search_t = 0;
+    saw_noise_t = 0;
     g_search_progress = 0;
     g_search_cont = -1;
 }
@@ -76,26 +80,27 @@ int inv_count(Actor *a, ItemId id) {
     return n;
 }
 
-bool inv_can_fit(Actor *a, ItemId id, int n) {
-    if (inv_used(a) + ITEMS[id].size * n > inv_capacity(a)) return false;
-    if (ITEMS[id].stack > 1)
-        for (int i = 0; i < a->ninv; i++)
-            if (a->inv[i].id == id && a->inv[i].count + n <= ITEMS[id].stack) return true;
-    return a->ninv < INV_MAX;
-}
-
-bool inv_add(Actor *a, Stack st) {
+/* the whole stack fits in the bag: space and slots (exactly what inv_add needs) */
+static bool inv_fits(Actor *a, Stack st) {
     if (st.id <= IT_NONE || st.count <= 0) return true;
     if (inv_used(a) + ITEMS[st.id].size * st.count > inv_capacity(a)) return false;
-    int maxs = ITEMS[st.id].stack;
-    /* all-or-nothing: make sure the whole stack fits before touching anything */
+    int maxs = MAXF(1, ITEMS[st.id].stack);
     int room = 0;
     if (maxs > 1)
         for (int i = 0; i < a->ninv; i++)
             if (a->inv[i].id == st.id) room += MAXF(0, maxs - a->inv[i].count);
     int rest = st.count - room;
     int slots_needed = rest > 0 ? (rest + maxs - 1) / maxs : 0;
-    if (a->ninv + slots_needed > INV_MAX) return false;
+    return a->ninv + slots_needed <= INV_MAX;
+}
+
+bool inv_can_fit(Actor *a, ItemId id, int n) { return inv_fits(a, (Stack){(int16_t)id, (int16_t)n, 0}); }
+
+bool inv_add(Actor *a, Stack st) {
+    if (st.id <= IT_NONE || st.count <= 0) return true;
+    /* all-or-nothing: make sure the whole stack fits before touching anything */
+    if (!inv_fits(a, st)) return false;
+    int maxs = MAXF(1, ITEMS[st.id].stack);
     if (maxs > 1) {
         for (int i = 0; i < a->ninv && st.count > 0; i++) {
             Stack *s = &a->inv[i];
@@ -131,34 +136,62 @@ bool inv_remove(Actor *a, ItemId id, int n) {
     return true;
 }
 
+/* still short of it for the list, or for one of the camp's favours */
 bool item_needed(ItemId id) {
     for (int i = 0; i < W.nlist; i++)
         if (W.list[i].id == id && W.list[i].have < W.list[i].need) return true;
+    for (int i = 0; i < W.nfav; i++)
+        if (W.fav[i].id == id && W.fav[i].have < W.fav[i].need) return true;
     return false;
 }
 
-/* drop the least useful non-list items until `n` of `id` fit */
+/* units of `it` that may be thrown out: everything for junk, only the surplus for shopping-list and favour items */
+static int spare_units(ItemId it) {
+    int want = list_want(it);
+    return want ? MAXF(0, total_have(it) - want) : 1 << 20;
+}
+
+static int drop_score(ItemId it) {
+    int sc = ITEMS[it].value;
+    if (ITEMS[it].cat == CAT_MED) sc += 400;
+    if (ITEMS[it].cat == CAT_WEAPON) sc += 200;
+    return sc;
+}
+
+/* can enough junk go to fit `want`? (bag: space only; the slot check is done while dropping) */
+static bool room_possible(Actor *a, Stack want) {
+    int left[IT_COUNT], freeable = 0;
+    for (int i = 0; i < IT_COUNT; i++) left[i] = -1;
+    for (int i = 0; i < a->ninv; i++) {
+        ItemId it = (ItemId)a->inv[i].id;
+        if (it == want.id || ITEMS[it].size == 0) continue;
+        if (left[it] < 0) left[it] = spare_units(it);
+        int u = MINF(a->inv[i].count, left[it]);
+        left[it] -= u;
+        freeable += u * ITEMS[it].size;
+    }
+    return inv_used(a) - freeable + ITEMS[want.id].size * want.count <= inv_capacity(a);
+}
+
+/* drop the least useful non-list items until `n` of `id` fit - or drop nothing if they can't be made to fit */
 bool make_room(Actor *a, ItemId id, int n) {
-    int need = ITEMS[id].size * n;
-    while (inv_used(a) + need > inv_capacity(a)) {
+    Stack want = {(int16_t)id, (int16_t)n, 0};
+    if (!room_possible(a, want)) return false;
+    while (!inv_fits(a, want)) {
+        /* short of space: one unit at a time; only short of slots: a whole junk stack */
+        bool space = inv_used(a) + ITEMS[id].size * n > inv_capacity(a);
         int best = -1, bscore = 1 << 30;
         for (int i = 0; i < a->ninv; i++) {
             ItemId it = (ItemId)a->inv[i].id;
-            if (ITEMS[it].size == 0 || item_needed(it)) continue;
-            /* list items may only go if we hold more than the list asks for */
-            for (int k = 0; k < W.nlist; k++)
-                if (W.list[k].id == it && total_have(it) <= W.list[k].need) goto keep;
-            {
-                int sc = ITEMS[it].value;
-                if (ITEMS[it].cat == CAT_MED) sc += 400;
-                if (ITEMS[it].cat == CAT_WEAPON) sc += 200;
-                if (sc < bscore) { bscore = sc; best = i; }
-            }
-        keep:;
+            if (it == id || ITEMS[it].size == 0) continue;
+            int spare = spare_units(it);
+            if (spare <= 0 || (!space && spare < a->inv[i].count)) continue;
+            int sc = drop_score(it);
+            if (sc < bscore) { bscore = sc; best = i; }
         }
         if (best < 0) return false;
         Stack s = a->inv[best];
-        int drop = 1;
+        int drop = space ? 1 : s.count;
         a->inv[best].count -= drop;
         if (a->inv[best].count <= 0) {
             memmove(&a->inv[best], &a->inv[best + 1], sizeof(Stack) * (a->ninv - best - 1));
@@ -181,24 +214,53 @@ static int cart_used_units(Cart *c) {
     return u;
 }
 
+static bool cart_can_merge(Cart *c, ItemId id) {
+    if (ITEMS[id].stack <= 1) return false;
+    for (int k = 0; k < c->n; k++) if (c->items[k].id == id) return true;
+    return false;
+}
+
+static bool cart_fits(Cart *c, Stack st) {
+    return cart_used_units(c) + ITEMS[st.id].size * st.count <= CART_CAP && (c->n < 16 || cart_can_merge(c, (ItemId)st.id));
+}
+
 bool cart_make_room(Cart *c, ItemId id, int n) {
     int need = ITEMS[id].size * n;
-    while (cart_used_units(c) + need > CART_CAP || c->n >= 16) {
+    bool merge = cart_can_merge(c, id);
+    /* dry run: if it can't be done, don't dump anything */
+    int left[IT_COUNT], freeable = 0, slots = 16 - c->n;
+    for (int i = 0; i < IT_COUNT; i++) left[i] = -1;
+    for (int k = 0; k < c->n; k++) {
+        ItemId it = (ItemId)c->items[k].id;
+        if (it == id) continue;
+        if (left[it] < 0) left[it] = spare_units(it);
+        int u = MINF(c->items[k].count, left[it]);
+        left[it] -= u;
+        freeable += u * ITEMS[it].size;
+        if (u == c->items[k].count) slots++;
+    }
+    if (cart_used_units(c) - freeable + need > CART_CAP || (!merge && slots < 1)) return false;
+    while (cart_used_units(c) + need > CART_CAP || (!merge && c->n >= 16)) {
+        bool space = cart_used_units(c) + need > CART_CAP;
         int best = -1, bscore = 1 << 30;
         for (int k = 0; k < c->n; k++) {
             ItemId it = (ItemId)c->items[k].id;
-            if (item_needed(it)) continue;
-            bool on_list = false;
-            for (int j = 0; j < W.nlist; j++)
-                if (W.list[j].id == it && total_have(it) <= W.list[j].need) on_list = true;
-            if (on_list) continue;
+            if (it == id) continue;
+            int spare = spare_units(it);
+            if (spare <= 0 || (!space && spare < c->items[k].count)) continue;
             int sc = ITEMS[it].value + (ITEMS[it].cat == CAT_MED ? 400 : 0);
             if (sc < bscore) { bscore = sc; best = k; }
         }
         if (best < 0) return false;
+        /* junk goes whole; a list item only loses what the list doesn't need */
         Stack s = c->items[best];
-        memmove(&c->items[best], &c->items[best + 1], sizeof(Stack) * (c->n - best - 1));
-        c->n--;
+        int drop = MINF(s.count, spare_units((ItemId)s.id));
+        c->items[best].count -= drop;
+        if (c->items[best].count <= 0) {
+            memmove(&c->items[best], &c->items[best + 1], sizeof(Stack) * (c->n - best - 1));
+            c->n--;
+        }
+        s.count = (int16_t)drop;
         int pi = pickup_spawn(s, c->pos, v2(frange(-40, 40), frange(-40, 40)));
         if (pi >= 0) W.pickups[pi].dropped = true;
     }
@@ -218,6 +280,7 @@ void equip(Actor *a, Stack st) {
     a->weapon = st;
     a->atk_cd = 0.15f;
     a->atk_t = -1;
+    a->hit_pending = false;   /* a swing started with the old weapon never lands with the new one */
     a->reload_t = 0;
 }
 
@@ -228,6 +291,7 @@ void drop_weapon(Actor *a, bool thrown) {
     a->weapon.id = IT_NONE;
     a->weapon.count = 0;
     a->weapon.cond = 0;
+    a->hit_pending = false;
 }
 
 void swap_weapon(Actor *a) {
@@ -239,6 +303,7 @@ void swap_weapon(Actor *a) {
         if (a->weapon.id) {
             if (inv_add(a, a->weapon)) {
                 a->weapon.id = IT_NONE;
+                a->hit_pending = false;
                 audio_play(SFX_PICKUP_WEAPON, 0.5f, 0, 0.9f);
             } else world_hint("No room in the bag.");
         }
@@ -256,6 +321,7 @@ void swap_weapon(Actor *a) {
     a->weapon = next;
     a->atk_cd = 0.2f;
     a->atk_t = -1;
+    a->hit_pending = false;
     audio_play(SFX_PICKUP_WEAPON, 0.6f, 0, 1.0f);
 }
 
@@ -284,11 +350,19 @@ static int have_for_craft(Actor *a, ItemId id) {
     return n;
 }
 
-bool can_craft(Actor *a, const Recipe *r) {
+/* units crafting may use: bag + hands, minus what the shopping list and the favours still need (bag and carts counted) */
+int craft_have(Actor *a, ItemId id) {
+    int n = have_for_craft(a, id);
+    int want = a == player() ? list_want(id) : 0;
+    if (want) n = MINF(n, MAXF(0, total_have(id) - want));
+    return n;
+}
+
+static bool can_craft_ex(Actor *a, const Recipe *r, bool keep_list) {
     if (r->flag == RF_REPAIR) {
         const WeaponDef *w = item_weapon(a->weapon.id);
         if (!a->weapon.id || w->kind != WK_MELEE) return false;
-        if (a->weapon.cond >= w->durability * (RUN.perks[PK_TINKERER] ? 2 : 1)) return false;
+        if (a->weapon.cond >= weapon_max_cond(&a->weapon)) return false;
     }
     if (r->flag == RF_REFUEL) {
         bool need = a->weapon.id == IT_CHAINSAW && a->weapon.cond < 100;
@@ -297,10 +371,16 @@ bool can_craft(Actor *a, const Recipe *r) {
     }
     for (int k = 0; k < 3; k++) {
         if (!r->in[k].id) continue;
-        if (have_for_craft(a, r->in[k].id) < r->in[k].n) return false;
+        int have = keep_list ? craft_have(a, r->in[k].id) : have_for_craft(a, r->in[k].id);
+        if (have < r->in[k].n) return false;
     }
     return true;
 }
+
+/* shopping-list items the list still needs are never crafted away */
+bool can_craft(Actor *a, const Recipe *r) { return can_craft_ex(a, r, true); }
+
+bool craft_list_blocked(Actor *a, const Recipe *r) { return !can_craft_ex(a, r, true) && can_craft_ex(a, r, false); }
 
 static void consume_for_craft(Actor *a, ItemId id, int n) {
     int from_bag = MINF(n, inv_count(a, id));
@@ -314,11 +394,12 @@ static void consume_for_craft(Actor *a, ItemId id, int n) {
 
 bool craft(Actor *a, const Recipe *r) {
     if (!can_craft(a, r)) return false;
+    a->hit_pending = false;
     if (r->flag == RF_REPAIR) {
-        const WeaponDef *w = item_weapon(a->weapon.id);
+        WeaponDef w = weapon_stats(&a->weapon);
         consume_for_craft(a, IT_DUCTTAPE, 1);
-        int maxd = w->durability * (RUN.perks[PK_TINKERER] ? 2 : 1);
-        a->weapon.cond = (int16_t)MINF(maxd, a->weapon.cond + w->durability * (RUN.perks[PK_TINKERER] ? 1.0f : 0.6f));
+        int maxd = weapon_max_cond(&a->weapon);
+        a->weapon.cond = (int16_t)MINF(maxd, a->weapon.cond + w.durability * (RUN.perks[PK_TINKERER] ? 1.0f : 0.6f));
         audio_play(SFX_CRAFT, 0.8f, 0, 1);
         return true;
     }
@@ -357,16 +438,19 @@ bool craft(Actor *a, const Recipe *r) {
 }
 
 /* ----------------------------------------------------------- shopping */
+/* the cart you push, one parked where you can see it (list_recount keeps near_until fresh), or one at the van */
+bool cart_counts(const Cart *c) {
+    if (!c->alive) return false;
+    return c->holder == 0 || (W.time < c->near_until && v2_dist(c->pos, player()->pos) < 96) ||
+           (c->pos.x > W.exit_rect.x - 16 && c->pos.x < W.exit_rect.x + W.exit_rect.w + 16 &&
+            c->pos.y > W.exit_rect.y - 16 && c->pos.y < W.exit_rect.y + W.exit_rect.h + 16);
+}
+
 int total_have(ItemId id) {
-    Actor *p = player();
-    int n = inv_count(p, id);
+    int n = inv_count(player(), id) + van_count(id);
     for (int i = 0; i < MAX_CARTS; i++) {
         Cart *c = &W.carts[i];
-        if (!c->alive) continue;
-        bool near = c->holder == 0 || v2_dist(c->pos, p->pos) < 72 ||
-                    (c->pos.x > W.exit_rect.x - 16 && c->pos.x < W.exit_rect.x + W.exit_rect.w + 16 &&
-                     c->pos.y > W.exit_rect.y - 16 && c->pos.y < W.exit_rect.y + W.exit_rect.h + 16);
-        if (!near) continue;
+        if (!cart_counts(c)) continue;
         for (int k = 0; k < c->n; k++)
             if (c->items[k].id == id) n += c->items[k].count;
     }
@@ -459,37 +543,62 @@ void actor_update(Actor *a, int idx, float dt) {
     } else {
         a->leg_anim = 0;
     }
-    /* stepping through blood */
-    if (a->blood_steps < 4) {
+    /* stepping through blood (paws leave no shoe prints) */
+    if (a->blood_steps < 4 && !is_animal(a) && !is_plant(a)) {
         for (int i = 0; i < W.ncorpses; i++)
             if (v2_dist2(W.corpses[i].pos, a->pos) < 12 * 12) { a->blood_steps = 10; break; }
     }
 }
 
 /* ------------------------------------------------------------- player */
-static int nearest_pickup(V2 pos, float r, bool weapons_only) {
+/* E on this floor item would actually take it (a bag that's bigger, room in the cart or the bag) */
+static bool can_collect(Actor *p, Pickup *pk) {
+    ItemId id = (ItemId)pk->st.id;
+    if (ITEMS[id].cat == CAT_WEAPON) return true;
+    if (ITEMS[id].cat == CAT_BAG) return bag_capacity(id) > bag_capacity(RUN.bag);
+    if (p->cart >= 0 && cart_fits(&W.carts[p->cart], pk->st)) return true;
+    if (inv_fits(p, pk->st)) return true;
+    return item_needed(id) && room_possible(p, pk->st);
+}
+
+static int nearest_pickup(Actor *p, float r, bool weapons) {
     int best = -1;
     float bd = r * r;
     for (int i = 0; i < MAX_PICKUPS; i++) {
-        Pickup *p = &W.pickups[i];
-        if (!p->alive || p->flying || p->fuse > 0) continue;
-        if (weapons_only && ITEMS[p->st.id].cat != CAT_WEAPON) continue;
-        float d = v2_dist2(p->pos, pos);
-        if (d < bd) { bd = d; best = i; }
+        Pickup *pk = &W.pickups[i];
+        if (!pk->alive || pk->flying || pk->fuse > 0) continue;
+        if ((ITEMS[pk->st.id].cat == CAT_WEAPON) != weapons) continue;
+        float d = v2_dist2(pk->pos, p->pos);
+        if (d >= bd || !can_collect(p, pk) || !reach_clear(p->pos, pk->pos)) continue;
+        bd = d;
+        best = i;
     }
     return best;
 }
 
-static int downed_near(V2 pos, float r) {
+/* weapons within reach first, then anything else that would actually fit - junk you can't carry never eats [E] */
+int interact_pickup(Actor *p) {
+    int pk = nearest_pickup(p, 18, true);
+    return pk >= 0 ? pk : nearest_pickup(p, 16, false);
+}
+
+/* the downed enemy [SPACE] finishes: close, and not through a door or a wall */
+int execute_target(Actor *p) {
     int best = -1;
-    float bd = r * r;
+    float bd = 18 * 18;
     for (int i = 1; i < W.nactors; i++) {
         Actor *a = &W.actors[i];
-        if (!a->used || !a->alive || a->down_t <= 0) continue;
-        float d = v2_dist2(a->pos, pos);
-        if (d < bd) { bd = d; best = i; }
+        if (!a->used || !a->alive || a->down_t <= 0 || is_crew(a)) continue;   /* your own get back up */
+        float d = v2_dist2(a->pos, p->pos);
+        if (d < bd && reach_clear(p->pos, a->pos)) { bd = d; best = i; }
     }
     return best;
+}
+
+static const char *bag_full_hint(void) {
+    if (W.hub) return ctl("Bag is full. Drop something [TAB] or grab a cart.", "Bag is full. Drop something [BACK] or grab a cart.");
+    return ctl("Bag is full. Drop something [TAB], grab a cart or unload at the van.",
+               "Bag is full. Drop something [BACK], grab a cart or unload at the van.");
 }
 
 static void collect_pickup(Actor *p, int pi) {
@@ -512,9 +621,8 @@ static void collect_pickup(Actor *p, int pi) {
     /* pushing a cart: loot goes into the cart */
     if (p->cart >= 0) {
         Cart *c = &W.carts[p->cart];
-        int used = cart_used_units(c);
-        bool fits = used + it->size * pk->st.count <= CART_CAP && c->n < 16;
-        if (!fits && item_needed(id) && !inv_can_fit(p, id, pk->st.count)) fits = cart_make_room(c, id, pk->st.count);
+        bool fits = cart_fits(c, pk->st);
+        if (!fits && item_needed(id) && !inv_fits(p, pk->st)) fits = cart_make_room(c, id, pk->st.count);
         if (fits) {
             bool merged = false;
             if (it->stack > 1)
@@ -530,7 +638,7 @@ static void collect_pickup(Actor *p, int pi) {
     }
     if (!inv_add(p, pk->st)) {
         if (!(item_needed(id) && make_room(p, id, pk->st.count) && inv_add(p, pk->st))) {
-            if (W.loot_cd <= 0) { world_hint("Bag is full. Drop something [TAB] or grab a cart."); W.loot_cd = 2.5f; }
+            if (W.loot_cd <= 0) { world_hint(bag_full_hint()); W.loot_cd = 2.5f; }
             return;
         }
     }
@@ -546,26 +654,25 @@ static void collect_pickup(Actor *p, int pi) {
 static void try_reload(Actor *p) {
     const WeaponDef *w = item_weapon(p->weapon.id);
     if (w->kind != WK_GUN || p->reload_t > 0) return;
-    int mag = (int)(w->mag * (RUN.perks[PK_STEADYAIM] ? 1.5f : 1.0f));
-    if (w->mag == 1) mag = 1;
+    int mag = weapon_max_cond(&p->weapon);
     if (p->weapon.cond >= mag) return;
     int per = w->ammo == IT_NAILS ? 15 : 1;  /* a box of nails holds 15 */
     if (inv_count(p, w->ammo) <= 0) {
-        if (p == player()) { world_hint("Out of ammo. Throw it [RMB]!"); audio_play(SFX_EMPTY, 0.6f, 0, 1); }
+        if (p == player()) { world_hint(ctl("Out of ammo. Throw it [RMB]!", "Out of ammo. Throw it [LT]!")); audio_play(SFX_EMPTY, 0.6f, 0, 1); }
         return;
     }
     int need = mag - p->weapon.cond;
     int take = MINF((need + per - 1) / per, inv_count(p, w->ammo));
     inv_remove(p, w->ammo, take);
     p->weapon.cond = (int16_t)MINF(mag, p->weapon.cond + take * per);
-    p->reload_t = w->mag <= 2 ? 0.5f : 0.85f;
+    p->reload_t = (w->mag <= 2 ? 0.5f : 0.85f) * (1.0f - 0.07f * train_level(STAT_AIM));
     audio_play(SFX_RELOAD, 0.7f, 0, 1);
 }
 
 void player_update(Actor *p, float dt) {
     if (!p->alive) return;
-    float speed = ARCH[AR_PLAYER].run * (RUN.perks[PK_LIGHTFEET] ? 1.12f : 1.0f);
-    bool locked = p->exec_t > 0 || p->down_t > 0 || W.exiting;
+    float speed = ARCH[AR_PLAYER].run * (RUN.perks[PK_LIGHTFEET] ? 1.12f : 1.0f) * (1.0f + 0.03f * train_level(STAT_FIT));
+    bool locked = p->exec_t > 0 || p->down_t > 0 || W.exiting || W.hub_lock == HUB_HELD;
     if (p->cart >= 0) speed *= 0.8f;
     if (search_ci >= 0) speed *= 0.0f;
     /* aim */
@@ -590,7 +697,7 @@ void player_update(Actor *p, float dt) {
         return;
     }
     /* movement */
-    V2 target = locked ? v2(0, 0) : v2_scale(IN.move, speed);
+    V2 target = locked || W.hub_lock == HUB_AIM ? v2(0, 0) : v2_scale(IN.move, speed);
     float acc = v2_len2(IN.move) > 0 ? 22.0f : 16.0f;
     p->vel = v2_add(p->vel, v2_scale(v2_sub(target, p->vel), smooth_k(acc, dt)));
     if (locked) return;
@@ -630,7 +737,7 @@ void player_update(Actor *p, float dt) {
             p->cart = -1;
             audio_play(SFX_THROW, 0.8f, 0, 0.7f);
         }
-    } else if (search_ci < 0) {
+    } else if (search_ci < 0 && (!W.hub || W.hub_lock == HUB_AIM)) {   /* at the Greenhouse only on the range */
         bool want = (w->kind == WK_GUN && p->weapon.id == IT_NAILGUN) || w->kind == WK_CHAINSAW || w->kind == WK_FLAME ||
                     (w->kind == WK_GUN && (p->weapon.id == IT_PISTOL))
                         ? IN.down[ACT_ATTACK]
@@ -641,7 +748,7 @@ void player_update(Actor *p, float dt) {
             if (w->kind == WK_GUN && p->weapon.cond <= 0) {
                 if (IN.pressed[ACT_ATTACK]) {
                     if (inv_count(p, w->ammo) > 0) try_reload(p);
-                    else { audio_play(SFX_EMPTY, 0.7f, 0, 1); world_hint("Out of ammo. Throw it [RMB]!"); }
+                    else { audio_play(SFX_EMPTY, 0.7f, 0, 1); world_hint(ctl("Out of ammo. Throw it [RMB]!", "Out of ammo. Throw it [LT]!")); }
                 }
             } else {
                 attack_begin(p, 0);
@@ -652,14 +759,19 @@ void player_update(Actor *p, float dt) {
         bool cutting = IN.down[ACT_ATTACK] && p->weapon.cond > 0;
         audio_loop(LOOP_CHAINSAW_IDLE, cutting ? 0 : 0.35f, 1);
         audio_loop(LOOP_CHAINSAW_CUT, cutting ? 0.55f : 0, 1);
-        if (p->weapon.cond > 0) make_noise(p->pos, cutting ? 260 : 120, 0);
+        /* a running saw is heard a few times a second, not every frame (same at any frame rate, and cheap) */
+        saw_noise_t -= dt;
+        if (p->weapon.cond > 0 && saw_noise_t <= 0) {
+            make_noise(p->pos, cutting ? 260 : 120, 0);
+            saw_noise_t = 0.25f;
+        }
     } else {
         audio_loop(LOOP_CHAINSAW_IDLE, 0, 1);
         audio_loop(LOOP_CHAINSAW_CUT, 0, 1);
     }
     audio_loop(LOOP_FIRE, 0, 1);
     /* throw */
-    if (IN.pressed[ACT_THROW]) {
+    if (IN.pressed[ACT_THROW] && !W.hub) {
         if (p->cart >= 0) {
             W.carts[p->cart].holder = -1;
             p->cart = -1;
@@ -672,50 +784,60 @@ void player_update(Actor *p, float dt) {
             } else {
                 p->weapon.id = IT_NONE;
             }
+            p->hit_pending = false;   /* the weapon left the hand mid-swing: that swing is gone */
             throw_item(p, 0, one, p->face, 430);
             p->atk_cd = 0.25f;
         }
     }
-    if (IN.pressed[ACT_RELOAD]) try_reload(p);
-    if (w->kind == WK_GUN && p->weapon.cond <= 0 && p->atk_cd < -0.3f && inv_count(p, w->ammo) > 0 && p->reload_t <= 0)
+    /* the range pistol is the camp's: hub.c loads it, and it never takes rounds from your bag */
+    bool range_gun = W.hub_lock == HUB_AIM;
+    if (IN.pressed[ACT_RELOAD] && !range_gun) try_reload(p);
+    if (w->kind == WK_GUN && p->weapon.cond <= 0 && p->atk_cd < -0.3f && inv_count(p, w->ammo) > 0 && p->reload_t <= 0 && !range_gun)
         try_reload(p);
     if (IN.pressed[ACT_HEAL]) use_heal(p);
-    if (IN.pressed[ACT_SWAP] && p->cart < 0) swap_weapon(p);
+    if (IN.pressed[ACT_SWAP] && p->cart < 0 && !W.hub) swap_weapon(p);   /* at the Greenhouse the bag screen picks the weapon */
 
     /* execute */
     if (IN.pressed[ACT_EXECUTE]) {
-        int t = downed_near(p->pos, 18);
+        int t = execute_target(p);
         if (t >= 0) execute_begin(p, 0, t);
     }
 
-    /* interact */
-    if (IN.pressed[ACT_INTERACT]) {
-        bool done = false;
+    /* interact (update_prompt in world.c mirrors this order) */
+    if (IN.pressed[ACT_INTERACT] && W.hub_lock == HUB_FREE) {
+        bool done = W.hub && hub_interact(p);   /* people, the stations and the van at the Greenhouse */
         if (p->cart >= 0) {
-            /* behind a cart: search what's in front (loot goes in the cart), otherwise let go */
-            int ci = container_at(v2_add(p->pos, v2_scale(v2_angle(p->face), 14)), 30, NULL);
-            bool in_exit = p->pos.x > W.exit_rect.x && p->pos.x < W.exit_rect.x + W.exit_rect.w &&
-                           p->pos.y > W.exit_rect.y && p->pos.y < W.exit_rect.y + W.exit_rect.h;
-            if (!in_exit && ci >= 0 && !(W.conts[ci].searched && W.conts[ci].n == 0)) {
+            /* behind a cart: search what's in front (loot goes in the cart), otherwise let go -
+             * at the van with the list done, E drives home with the cart */
+            int ci = container_seen(p->pos, v2_add(p->pos, v2_scale(v2_angle(p->face), 14)), 30, NULL);
+            bool at_van = in_exit(p->pos);
+            if (!at_van && ci >= 0 && !(W.conts[ci].searched && W.conts[ci].n == 0)) {
                 search_ci = ci;
                 search_t = 0;
                 audio_play(SFX_LOOT_RUMMAGE, 1.0f, 0, frange(0.9f, 1.1f));
                 make_noise(p->pos, 60, 0);
                 done = true;
-            } else if (!in_exit) {
+            } else if (!at_van || !W.list_done) {
                 W.carts[p->cart].holder = -1;
                 p->cart = -1;
                 done = true;
             }
         }
-        if (!done) {
-            /* exit */
-            if (p->pos.x > W.exit_rect.x && p->pos.x < W.exit_rect.x + W.exit_rect.w && p->pos.y > W.exit_rect.y &&
-                p->pos.y < W.exit_rect.y + W.exit_rect.h) {
+        if (!done && !W.hub) {
+            /* exit - or, the list not done yet, load what you have of it into the van and go back for the rest */
+            if (in_exit(p->pos)) {
+                list_recount();   /* judge what's here now, not a quarter-second-old tally */
+                int loaded = W.list_done ? 0 : van_load_bag();
                 if (W.list_done) {
                     W.exiting = true;
                     W.exit_t = 0;
                     audio_play(SFX_VAN_DOOR, 1, 0, 1);
+                } else if (loaded) {
+                    char buf[32];
+                    SDL_snprintf(buf, sizeof buf, "INTO THE VAN x%d", loaded);
+                    floater(v2(p->pos.x, p->pos.y - 16), buf, COL_WHITE, false);
+                    audio_play(SFX_VAN_DOOR, 0.8f, 0, 1.1f);
+                    if (!W.van_hinted) { world_hint("Don't leave the van alone too long - people steal."); W.van_hinted = true; }
                 } else {
                     world_message("THE LIST ISN'T DONE", COL_RED);
                     audio_play(SFX_UI_ERROR, 0.6f, 0, 1);
@@ -723,45 +845,32 @@ void player_update(Actor *p, float dt) {
                 done = true;
             }
         }
-        if (!done) {
-            int pk = nearest_pickup(p->pos, 18, true);
-            if (pk >= 0) {
-                Pickup *pp = &W.pickups[pk];
-                if (p->weapon.id == pp->st.id && ITEMS[pp->st.id].stack > 1 && p->weapon.count < ITEMS[pp->st.id].stack) {
-                    p->weapon.count += pp->st.count;
-                    if (p->weapon.count > ITEMS[pp->st.id].stack) {
-                        pp->st.count = (int16_t)(p->weapon.count - ITEMS[pp->st.id].stack);
-                        p->weapon.count = (int16_t)ITEMS[pp->st.id].stack;
-                    } else pp->alive = false;
-                } else {
-                    Stack st = pp->st;
-                    pp->alive = false;
-                    equip(p, st);
-                }
-                audio_play(SFX_PICKUP_WEAPON, 0.8f, 0, 1);
-                done = true;
+        int pk = done ? -1 : interact_pickup(p);
+        if (pk >= 0 && ITEMS[W.pickups[pk].st.id].cat != CAT_WEAPON) {
+            /* deliberately pick up an item lying here (e.g. one you dropped) - only offered if it fits */
+            W.pickups[pk].dropped = false;
+            W.pickups[pk].age = 1;
+            collect_pickup(p, pk);
+            done = true;
+        } else if (pk >= 0) {
+            Pickup *pp = &W.pickups[pk];
+            if (p->weapon.id == pp->st.id && ITEMS[pp->st.id].stack > 1 && p->weapon.count < ITEMS[pp->st.id].stack) {
+                p->weapon.count += pp->st.count;
+                if (p->weapon.count > ITEMS[pp->st.id].stack) {
+                    pp->st.count = (int16_t)(p->weapon.count - ITEMS[pp->st.id].stack);
+                    p->weapon.count = (int16_t)ITEMS[pp->st.id].stack;
+                } else pp->alive = false;
+            } else {
+                Stack st = pp->st;
+                pp->alive = false;
+                equip(p, st);
             }
-        }
-        if (!done) {
-            /* deliberately pick up an item lying here (e.g. one you dropped) */
-            int best = -1;
-            float bd = 16 * 16;
-            for (int i = 0; i < MAX_PICKUPS; i++) {
-                Pickup *pk = &W.pickups[i];
-                if (!pk->alive || pk->flying || ITEMS[pk->st.id].cat == CAT_WEAPON) continue;
-                float d = v2_dist2(pk->pos, p->pos);
-                if (d < bd) { bd = d; best = i; }
-            }
-            if (best >= 0) {
-                W.pickups[best].dropped = false;
-                W.pickups[best].age = 1;
-                collect_pickup(p, best);
-                done = true;
-            }
+            audio_play(SFX_PICKUP_WEAPON, 0.8f, 0, 1);
+            done = true;
         }
         if (!done) {
             int dist;
-            int ci = container_at(v2_add(p->pos, v2_scale(v2_angle(p->face), 6)), 30, &dist);
+            int ci = container_seen(p->pos, v2_add(p->pos, v2_scale(v2_angle(p->face), 6)), 30, &dist);
             if (ci >= 0) {
                 Container *c = &W.conts[ci];
                 if (c->searched && c->n == 0) {
@@ -784,14 +893,24 @@ void player_update(Actor *p, float dt) {
                 done = true;
             }
         }
-        (void)done;
+        if (!done) {
+            /* nothing else to do here, but something on the floor that won't fit: say why */
+            for (int i = 0; i < MAX_PICKUPS; i++) {
+                Pickup *pk = &W.pickups[i];
+                if (!pk->alive || pk->flying || pk->fuse > 0 || ITEMS[pk->st.id].cat == CAT_WEAPON) continue;
+                if (v2_dist2(pk->pos, p->pos) >= 16 * 16 || !reach_clear(p->pos, pk->pos)) continue;
+                audio_play(SFX_UI_ERROR, 0.5f, 0, 1);
+                world_hint(ITEMS[pk->st.id].cat == CAT_BAG ? "Your bag is already bigger." : bag_full_hint());
+                break;
+            }
+        }
     }
     /* walk-over pickups */
     for (int i = 0; i < MAX_PICKUPS; i++) {
         Pickup *pk = &W.pickups[i];
         if (!pk->alive || pk->flying || pk->age < 0.35f || pk->dropped) continue;
         if (ITEMS[pk->st.id].cat == CAT_WEAPON) continue;
-        if (v2_dist2(pk->pos, p->pos) < 12 * 12) collect_pickup(p, i);
+        if (v2_dist2(pk->pos, p->pos) < 12 * 12 && reach_clear(p->pos, pk->pos)) collect_pickup(p, i);
     }
     W.loot_cd -= dt;
 }
@@ -820,6 +939,8 @@ int arch_pose_sprite(Actor *a, int *gx, int *gy) {
 
 void actor_draw_shadow(Actor *a) {
     if (!a->used) return;
+    if (is_animal(a)) { animal_draw_shadow(a); return; }
+    if (is_plant(a)) { plant_draw_shadow(a); return; }
     float s = a->arch == AR_BOSS ? 1.6f : (a->arch == AR_BRUTE ? 1.2f : 1.0f);
     gfx_spr_ex(SPR_FX_SHADOW, a->pos.x + 2, a->pos.y + 3, 0, s, s, TINT_NONE);
 }
@@ -866,6 +987,8 @@ static void swing_pose(Actor *a, const WeaponDef *w, float *wang, float *twist, 
 
 void actor_draw(Actor *a) {
     if (!a->used || !a->alive) return;
+    if (is_animal(a)) { animal_draw(a); return; }
+    if (is_plant(a)) { plant_draw(a); return; }
     const ArchDef *d = &ARCH[a->arch];
     Color tint = TINT_NONE;
     if (a->hurt_t > 0) tint = rgb(255, 90, 90);

@@ -1,6 +1,7 @@
 /* LAST AISLE - procedural level generation */
 #include "world.h"
 #include "gfx.h"
+#include "hub.h"
 
 static Rng R;
 
@@ -103,6 +104,10 @@ static int cont_new(int tx, int ty, int zone, const char *name) {
     return i;
 }
 
+/* the cells each prop blocks (generation only), so a removed prop frees exactly its own footprint */
+static Rect prop_fp[sizeof W.props / sizeof W.props[0]];
+static bool prop_has_fp[sizeof W.props / sizeof W.props[0]];
+
 static int prop_add(int spr, float x, float y, int layer) {
     if (W.nprops >= ARRAY_LEN(W.props)) return -1;
     Prop *p = &W.props[W.nprops];
@@ -113,6 +118,7 @@ static int prop_add(int spr, float x, float y, int layer) {
     p->layer = layer;
     p->cont = -1;
     p->tint = TINT_NONE;
+    prop_has_fp[W.nprops] = false;
     return W.nprops++;
 }
 
@@ -124,6 +130,59 @@ static void block_rect(Rect r, int flags) {
             if (c->wall) continue;
             c->obj = OB_BLOCKER;
             c->flags |= flags;
+        }
+}
+
+/* a prop that stands on the map: block its cells and remember them */
+static void prop_block(int pi, Rect r, int flags) {
+    block_rect(r, flags);
+    if (pi < 0) return;
+    prop_fp[pi] = r;
+    prop_has_fp[pi] = true;
+}
+
+static int prop_covering(int x, int y) {
+    for (int i = 0; i < W.nprops; i++) {
+        Rect f = prop_fp[i];
+        if (prop_has_fp[i] && x >= f.x0 && x <= f.x1 && y >= f.y0 && y <= f.y1) return i;
+    }
+    return -1;
+}
+
+/* take a prop off the map: free its footprint, empty its container, keep indices consistent */
+static void prop_remove(int i) {
+    if (prop_has_fp[i]) {
+        Rect f = prop_fp[i];
+        for (int y = f.y0; y <= f.y1; y++)
+            for (int x = f.x0; x <= f.x1; x++)
+                if (in_map(x, y) && cell(x, y)->obj == OB_BLOCKER) clear_at(x, y);
+    }
+    int last = --W.nprops;
+    for (int c = 0; c < W.nconts; c++) {
+        Container *k = &W.conts[c];
+        if (k->prop == i) {
+            k->prop = -1;
+            if (in_map(k->tx, k->ty) && cell(k->tx, k->ty)->cont == c) cell(k->tx, k->ty)->cont = -1;
+            k->n = 0;
+            k->searched = true;
+            k->dead = true;
+        } else if (k->prop == last) k->prop = i;
+    }
+    W.props[i] = W.props[last];
+    prop_fp[i] = prop_fp[last];
+    prop_has_fp[i] = prop_has_fp[last];
+}
+
+/* clear a rect for something new: props standing there go whole, containers there go empty */
+static void clear_rect(Rect r) {
+    for (int y = r.y0; y <= r.y1; y++)
+        for (int x = r.x0; x <= r.x1; x++) {
+            if (!in_map(x, y)) continue;
+            Cell *c = cell(x, y);
+            int pc = c->obj == OB_BLOCKER ? prop_covering(x, y) : -1;
+            if (pc >= 0) prop_remove(pc);
+            if (c->cont >= 0) { W.conts[c->cont].dead = true; W.conts[c->cont].n = 0; }
+            clear_at(x, y);
         }
 }
 
@@ -176,6 +235,22 @@ static void cart_add(V2 pos, float ang) {
         c->holder = -1;
         c->pusher = -1;
         return;
+    }
+}
+
+/* carts dropped before a car, a tree or a hedge bulge landed on them: nudge to the nearest free tile */
+static void settle_carts(void) {
+    for (int i = 0; i < MAX_CARTS; i++) {
+        Cart *ct = &W.carts[i];
+        if (!ct->alive) continue;
+        int tx = tile_of(ct->pos.x), ty = tile_of(ct->pos.y);
+        if (free_cell(tx, ty)) continue;
+        bool moved = false;
+        for (int r = 1; r <= 4 && !moved; r++)
+            for (int oy = -r; oy <= r && !moved; oy++)
+                for (int ox = -r; ox <= r && !moved; ox++)
+                    if (free_cell(tx + ox, ty + oy)) { ct->pos = tile_center(tx + ox, ty + oy); moved = true; }
+        if (!moved) ct->alive = false;
     }
 }
 
@@ -254,7 +329,8 @@ static void fill_aisles(Rect r, const int *zones, int nz, bool vertical) {
             int goods = rng_int(&R, 4);
             int y = r.y0 + 1;
             while (y + 2 <= r.y1 - 1) {
-                int len = MINF(seg + rng_range(&R, -1, 2), r.y1 - 1 - y + 1);
+                /* roll once: MINF evaluates its arguments twice, which let runs overshoot the rect */
+                int roll = seg + rng_range(&R, -1, 2), len = MINF(roll, r.y1 - 1 - y + 1);
                 if (len >= 3) shelf_run(x, y, len, true, zone, goods);
                 y += len + 2;
             }
@@ -267,7 +343,7 @@ static void fill_aisles(Rect r, const int *zones, int nz, bool vertical) {
             int goods = rng_int(&R, 4);
             int x = r.x0 + 1;
             while (x + 2 <= r.x1 - 1) {
-                int len = MINF(seg + rng_range(&R, -1, 3), r.x1 - 1 - x + 1);
+                int roll = seg + rng_range(&R, -1, 3), len = MINF(roll, r.x1 - 1 - x + 1);
                 if (len >= 3) shelf_run(x, y, len, false, zone, goods);
                 x += len + 2;
             }
@@ -286,12 +362,12 @@ static void checkouts(int x0, int x1, int y, int avoid0, int avoid1) {
     }
 }
 
-static void fridges_along(int x0, int x1, int y, int obj, float stocked) {
+/* how full each fridge is gets rolled later by container_fill (Z_FRIDGE odds) */
+static void fridges_along(int x0, int x1, int y, int obj) {
     for (int x = x0; x <= x1; x++) {
         if (!free_cell(x, y)) continue;
         obj_at(x, y, obj, 0);
-        int ci = cont_new(x, y, Z_FRIDGE, "Fridge");
-        if (ci >= 0 && !rng_chance(&R, stocked)) W.conts[ci].searched = false;
+        cont_new(x, y, Z_FRIDGE, "Fridge");
     }
 }
 
@@ -364,6 +440,7 @@ static void decay(Rect r, int holes) {
             floor_at(cx, cy, FL_DIRT);
             decor(SPR_O_ROOTS + rng_int(&R, SPR_O_ROOTS_N), cp.x, cp.y, rng_int(&R, 2), 0);
             int pi = prop_add(SPR_P_TREE + rng_int(&R, 2), cp.x, cp.y, 1);
+            prop_block(pi, rect(cx, cy, cx, cy), 0);
             if (pi >= 0) W.props[pi].angle = rng_rangef(&R, 0, 6.28f);
         }
     }
@@ -417,7 +494,8 @@ static void border(int wall) {
         else if (side == 1) { x = rng_range(&R, 1, W.w - 2); y = W.h - 2; }
         else if (side == 2) { x = 1; y = rng_range(&R, 1, W.h - 2); }
         else { x = W.w - 2; y = rng_range(&R, 1, W.h - 2); }
-        if (!cell(x, y)->wall && !(cell(x, y)->flags & (CF_INDOOR | CF_NOSPAWN | CF_EXIT))) wall_at(x, y, wall);
+        if (!cell(x, y)->wall && !cell(x, y)->obj && !(cell(x, y)->flags & (CF_INDOOR | CF_NOSPAWN | CF_EXIT)))
+            wall_at(x, y, wall);
     }
 }
 
@@ -426,10 +504,11 @@ static void tree_at(int tx, int ty) {
     for (int y = ty - 1; y <= ty + 1; y++)
         for (int x = tx - 1; x <= tx + 1; x++)
             if (free_cell(x, y) && rng_chance(&R, 0.8f)) floor_at(x, y, rng_chance(&R, 0.6f) ? FL_GRASS : FL_DIRT);
-    obj_at(tx, ty, OB_BLOCKER, 0);
     V2 p = tile_center(tx, ty);
     decor(SPR_O_ROOTS + rng_int(&R, SPR_O_ROOTS_N), p.x, p.y, rng_int(&R, 2), 0);
     int pi = prop_add(rng_chance(&R, 0.15f) ? SPR_P_DEADTREE : SPR_P_TREE + rng_int(&R, 2), p.x, p.y, 1);
+    obj_at(tx, ty, OB_BLOCKER, 0);
+    prop_block(pi, rect(tx, ty, tx, ty), 0);
     if (pi >= 0) W.props[pi].angle = rng_rangef(&R, 0, 6.28f);
 }
 
@@ -440,7 +519,7 @@ static void car_at(int tx, int ty, bool flip) {
     int spr = rng_chance(&R, 0.2f) ? SPR_P_CAR_BURNT : SPR_P_CAR + rng_int(&R, SPR_P_CAR_N);
     int pi = prop_add(spr, tx * TILE, ty * TILE, 0);
     if (pi >= 0 && flip) W.props[pi].angle = PI_F;
-    block_rect(rect(tx, ty, tx + 1, ty + 2), CF_SOLID | CF_SHOT);
+    prop_block(pi, rect(tx, ty, tx + 1, ty + 2), CF_SOLID | CF_SHOT);
     int ci = cont_new(tx, ty + 1, Z_CAR, "Car");
     if (ci >= 0) {
         W.conts[ci].pos = v2(tx * TILE + 16, ty * TILE + 24);
@@ -504,44 +583,38 @@ static void parking(Rect lot, bool stalls) {
     }
 }
 
+/* keep the van's parking spot (and the air above it) free of cars, trees, lamps and carts:
+ * call before dressing the lot, with the same arguments place_van gets */
+static void reserve_van(int cx, int by) {
+    int vx = cx, vy = by - 4;
+    for (int y = vy - 3; y <= by; y++)
+        for (int x = vx - 6; x <= vx + 4; x++)
+            if (in_map(x, y)) cell(x, y)->flags |= CF_NOSPAWN;
+}
+
 /* the getaway van + exit zone at bottom centre */
 static void place_van(int cx, int by) {
     int vx = cx, vy = by - 4;
+    clear_rect(rect(vx - 4, vy - 1, vx + 3, vy + 4));
     for (int y = vy - 1; y <= vy + 4; y++)
         for (int x = vx - 4; x <= vx + 3; x++)
-            if (in_map(x, y)) { clear_at(x, y); floor_at(x, y, FL_ASPHALT); cell(x, y)->flags |= CF_NOSPAWN; }
-    /* nothing may stand or hang over the parking spot: remove props, trees and carts there */
+            if (in_map(x, y)) { floor_at(x, y, FL_ASPHALT); cell(x, y)->flags |= CF_NOSPAWN; }
+    /* nothing may stand or hang over the parking spot (reserve_van normally keeps it empty) */
     float rx0 = (vx - 6) * TILE, rx1 = (vx + 5) * TILE, ry0 = (vy - 3) * TILE, ry1 = (vy + 6) * TILE;
     for (int i = 0; i < W.nprops; i++) {
         Prop *p = &W.props[i];
         float px = p->x, py = p->y;
         if (g_atlas[p->spr].px == 0 && g_atlas[p->spr].py == 0) { px += g_atlas[p->spr].w / 2; py += g_atlas[p->spr].h / 2; }
         if (px > rx0 && px < rx1 && py > ry0 && py < ry1) {
-            /* free the footprint the prop blocked */
-            for (int y = tile_of(py) - 2; y <= tile_of(py) + 2; y++)
-                for (int x = tile_of(px) - 2; x <= tile_of(px) + 2; x++)
-                    if (in_map(x, y) && cell(x, y)->obj == OB_BLOCKER) clear_at(x, y);
-            int last = --W.nprops;
-            for (int c = 0; c < W.nconts; c++) {
-                if (W.conts[c].prop == i) {
-                    W.conts[c].prop = -1;
-                    if (in_map(W.conts[c].tx, W.conts[c].ty)) cell(W.conts[c].tx, W.conts[c].ty)->cont = -1;
-                    W.conts[c].n = 0;
-                    W.conts[c].searched = true;
-                    W.conts[c].dead = true;
-                }
-                else if (W.conts[c].prop == last) W.conts[c].prop = i;
-            }
-            *p = W.props[last];
+            prop_remove(i);
             i--;
         }
     }
     for (int i = 0; i < MAX_CARTS; i++)
         if (W.carts[i].alive && W.carts[i].pos.x > rx0 && W.carts[i].pos.x < rx1 && W.carts[i].pos.y > ry0 && W.carts[i].pos.y < ry1)
-            W.carts[i].pos.y -= 5 * TILE;
+            W.carts[i].alive = false;
     int pi = prop_add(SPR_P_VAN, vx * TILE - 2, vy * TILE - 4, 0);
-    (void)pi;
-    block_rect(rect(vx, vy, vx + 1, vy + 2), CF_SOLID | CF_SHOT);
+    prop_block(pi, rect(vx, vy, vx + 1, vy + 2), CF_SOLID | CF_SHOT);
     for (int y = vy; y <= vy + 2; y++)
         for (int x = vx - 3; x <= vx - 1; x++) cell(x, y)->flags |= CF_EXIT;
     W.van = v2(vx * TILE + 16, vy * TILE + 24);
@@ -573,7 +646,7 @@ static void room_office(Rect r) {
     int x = r.x0 + 1, y = r.y0 + 1;
     if (rw(r) >= 4 && free_cell(x, y) && free_cell(x + 1, y)) {
         int pi = prop_add(SPR_P_DESK, x * TILE, y * TILE, 0);
-        block_rect(rect(x, y, x + 1, y), CF_SOLID);
+        prop_block(pi, rect(x, y, x + 1, y), CF_SOLID);
         int ci = cont_new(x, y, Z_OFFICE, "Desk");
         if (ci >= 0) { W.conts[ci].prop = pi; W.conts[ci].pos = v2(x * TILE + 16, y * TILE + 8); }
         int ch = prop_add(SPR_P_CHAIR, x * TILE + 16, (y + 1) * TILE + 6, 0);
@@ -604,15 +677,14 @@ static void room_staff(Rect r) {
     if (free_cell(r.x1, r.y1)) { obj_at(r.x1, r.y1, OB_VENDING, 0); cont_new(r.x1, r.y1, Z_SNACKS, "Vending machine"); }
     int tx = (r.x0 + r.x1) / 2, ty = (r.y0 + r.y1) / 2 + 1;
     if (free_cell(tx, ty) && rw(r) >= 4) {
-        prop_add(SPR_P_TABLE, tx * TILE - 4, ty * TILE - 4, 0);
-        block_rect(rect(tx, ty, tx, ty), CF_SOLID);
+        prop_block(prop_add(SPR_P_TABLE, tx * TILE - 4, ty * TILE - 4, 0), rect(tx, ty, tx, ty), CF_SOLID);
     }
 }
 
 static void room_freezer(Rect r) {
     floor_rect(r, FL_CONCRETE);
     set_zone(r, Z_FRIDGE);
-    fridges_along(r.x0, r.x1, r.y0, OB_FRIDGE_D, 0.3f);
+    fridges_along(r.x0, r.x1, r.y0, OB_FRIDGE_D);
     scatter_obj(rect(r.x0, r.y0 + 2, r.x1, r.y1), OB_CRATE, 2, Z_STORAGE, "Crate");
 }
 
@@ -725,8 +797,8 @@ static Rect store(Rect b, const StoreStyle *st, int sign_spr) {
     /* checkouts near the front */
     int dmin = doors[0], dmax = doors[nd - 1] + 1;
     checkouts(sales.x0 + 2, sales.x1 - 2, sales.y1 - 3, dmin, dmax);
-    /* aisles */
-    Rect aisles = rect(sales.x0 + 2, sales.y0 + 1, sales.x1 - 2, sales.y1 - 6);
+    /* aisles; a small shop keeps a two-tile walkway to the checkouts instead of three */
+    Rect aisles = rect(sales.x0 + 2, sales.y0 + 1, sales.x1 - 2, sales.y1 - (rh(sales) >= 14 ? 6 : 5));
     if (rw(aisles) > 4 && rh(aisles) > 4) fill_aisles(aisles, st->zones, st->nz, st->vertical_aisles);
     for (int i = 0; i < st->camps; i++) {
         int cx = rng_chance(&R, 0.5f) ? sales.x0 + 3 : sales.x1 - 3;
@@ -761,7 +833,7 @@ static void alley_dressing(Rect r) {
         int x = rng_range(&R, r.x0, r.x1 - 1), y = rng_range(&R, r.y0, r.y1 - 1);
         if (!free_cell(x, y) || !free_cell(x + 1, y) || !free_cell(x, y + 1) || !free_cell(x + 1, y + 1)) continue;
         int pi = prop_add(SPR_P_DUMPSTER, x * TILE, y * TILE + 4, 0);
-        block_rect(rect(x, y, x + 1, y + 1), CF_SOLID | CF_SHOT);
+        prop_block(pi, rect(x, y, x + 1, y + 1), CF_SOLID | CF_SHOT);
         int ci = cont_new(x, y, Z_STORAGE, "Dumpster");
         if (ci >= 0) { W.conts[ci].prop = pi; W.conts[ci].pos = v2(x * TILE + 16, y * TILE + 16); }
     }
@@ -775,11 +847,24 @@ static void alley_dressing(Rect r) {
 
 static void gen_gasstation(void) {
     base_outdoor();
-    int bw = rng_range(&R, 20, 24), bh = rng_range(&R, 13, 15);
+    /* tall enough for a few short aisles between the back rooms and the counter */
+    int bw = rng_range(&R, 20, 24), bh = rng_range(&R, 19, 20);
     int bx0 = (W.w - bw) / 2 + rng_range(&R, -3, 3), by0 = 4;
     Rect b = rect(bx0, by0, bx0 + bw - 1, by0 + bh - 1);
     static const int zones[] = {Z_GROCERY, Z_SNACKS, Z_DRINKS};
-    StoreStyle st = {FL_LINO, zones, 3, true, 5, false, 0, 2, 1};
+    StoreStyle st = {FL_LINO, zones, 3, true, 4, false, 0, 2, 1};
+    int vanx = W.w / 2 + rng_range(&R, -6, 6);
+    reserve_van(vanx, W.h - 2);
+    /* pump islands claim their spot before the lot grows trees and carts */
+    int py = b.y1 + 6, pumpx[3], npumps = 0;
+    for (int i = 0; i < 3; i++) {
+        int px = b.x0 + 3 + i * 6;
+        if (px + 1 >= W.w - 2) break;
+        pumpx[npumps++] = px;
+        for (int y = py - 1; y <= py + 2; y++)
+            for (int x = px - 1; x <= px + 1; x++)
+                if (in_map(x, y)) cell(x, y)->flags |= CF_NOSPAWN;
+    }
     /* outside first so the store overwrites */
     Rect lot = rect(1, b.y1 + 3, W.w - 2, W.h - 2);
     parking(lot, false);
@@ -788,18 +873,13 @@ static void gen_gasstation(void) {
     alley_dressing(rect(b.x1 + 1, by0, W.w - 2, b.y1 + 2));
     floor_rect(rect(b.x0 - 1, b.y1 + 1, b.x1 + 1, b.y1 + 2), FL_SIDEWALK);
     store(b, &st, SPR_P_SIGN_QUICKSTOP);
-    /* pump islands */
-    int py = b.y1 + 7;
-    for (int i = 0; i < 3; i++) {
-        int px = b.x0 + 3 + i * 6;
-        if (px + 1 >= W.w - 2) break;
-        for (int y = py - 1; y <= py + 2; y++)
-            for (int x = px - 1; x <= px + 1; x++)
-                if (in_map(x, y)) { clear_at(x, y); floor_at(x, y, FL_CONCRETE); }
-        prop_add(SPR_P_GASPUMP, px * TILE, py * TILE, 0);
-        block_rect(rect(px, py, px, py + 1), CF_SOLID | CF_SHOT);
+    for (int i = 0; i < npumps; i++) {
+        int px = pumpx[i];
+        clear_rect(rect(px - 1, py - 1, px + 1, py + 2));
+        floor_rect(rect(px - 1, py - 1, px + 1, py + 2), FL_CONCRETE);
+        prop_block(prop_add(SPR_P_GASPUMP, px * TILE, py * TILE, 0), rect(px, py, px, py + 1), CF_SOLID | CF_SHOT);
     }
-    place_van(W.w / 2 + rng_range(&R, -6, 6), W.h - 2);
+    place_van(vanx, W.h - 2);
     border(WL_HEDGE);
 }
 
@@ -810,6 +890,8 @@ static void gen_market(void) {
     Rect b = rect(bx0, by0, bx0 + bw - 1, by0 + bh - 1);
     static const int zones[] = {Z_GROCERY, Z_GROCERY, Z_SNACKS, Z_DRINKS, Z_GROCERY};
     StoreStyle st = {FL_LINO, zones, 5, true, 6, true, 1, 4, 2};
+    int vanx = W.w / 2 + rng_range(&R, -8, 8);
+    reserve_van(vanx, W.h - 2);
     Rect lot = rect(1, b.y1 + 3, W.w - 2, W.h - 2);
     parking(lot, true);
     alley_dressing(rect(1, 1, W.w - 2, by0 - 1));
@@ -817,7 +899,7 @@ static void gen_market(void) {
     alley_dressing(rect(b.x1 + 1, by0, W.w - 2, b.y1 + 2));
     floor_rect(rect(b.x0 - 1, b.y1 + 1, b.x1 + 1, b.y1 + 2), FL_SIDEWALK);
     store(b, &st, SPR_P_SIGN_MARKET);
-    place_van(W.w / 2 + rng_range(&R, -8, 8), W.h - 2);
+    place_van(vanx, W.h - 2);
     border(WL_HEDGE);
 }
 
@@ -828,6 +910,8 @@ static void gen_hardware(void) {
     Rect b = rect(bx0, by0, bx0 + bw - 1, by0 + bh - 1);
     static const int zones[] = {Z_HARDWARE, Z_HARDWARE, Z_ELECTRONICS, Z_HARDWARE};
     StoreStyle st = {FL_CONCRETE, zones, 4, false, 6, false, 1, 4, 2};
+    int vanx = W.w / 2 + rng_range(&R, -8, 8);
+    reserve_van(vanx, W.h - 2);
     Rect lot = rect(1, b.y1 + 3, W.w - 2, W.h - 2);
     parking(lot, true);
     alley_dressing(rect(1, 1, W.w - 2, by0 - 1));
@@ -841,8 +925,7 @@ static void gen_hardware(void) {
     for (int i = 0; i < 4; i++) {
         int x = rng_range(&R, sales.x0 + 2, sales.x1 - 3), y = rng_range(&R, sales.y0 + 1, sales.y1 - 6);
         if (free_cell(x, y) && free_cell(x + 1, y)) {
-            prop_add(SPR_P_LUMBER, x * TILE, y * TILE, 0);
-            block_rect(rect(x, y, x + 1, y), CF_SOLID | CF_SHOT);
+            prop_block(prop_add(SPR_P_LUMBER, x * TILE, y * TILE, 0), rect(x, y, x + 1, y), CF_SOLID | CF_SHOT);
         }
     }
     /* garden centre: hedged yard on the right */
@@ -869,7 +952,7 @@ static void gen_hardware(void) {
         floor_at(gc.x0, dy, FL_DIRT);
         tree_at(rng_range(&R, gc.x0 + 2, gc.x1 - 2), rng_range(&R, gc.y0 + 2, gc.y1 - 2));
     }
-    place_van(W.w / 2 + rng_range(&R, -8, 8), W.h - 2);
+    place_van(vanx, W.h - 2);
     border(WL_RUIN);
 }
 
@@ -888,7 +971,7 @@ static void pharmacy_shop(Rect r) {
 static void liquor_shop(Rect r) {
     static const int zones[] = {Z_DRINKS};
     fill_aisles(rect(r.x0 + 1, r.y0 + 1, r.x1 - 1, r.y1 - 4), zones, 1, true);
-    fridges_along(r.x0 + 1, r.x1 - 1, r.y0, OB_FRIDGE_D, 0.4f);
+    fridges_along(r.x0 + 1, r.x1 - 1, r.y0, OB_FRIDGE_D);
     obj_at(r.x0 + 1, r.y1 - 2, OB_REGISTER, 0);
     cont_new(r.x0 + 1, r.y1 - 2, Z_CHECKOUT, "Register");
     obj_at(r.x0 + 2, r.y1 - 2, OB_COUNTER, 2);
@@ -910,6 +993,8 @@ static void gen_pharmacy(void) {
     int bw = MINF(W.w - 6, 66), bh = rng_range(&R, 22, 25);
     int bx0 = (W.w - bw) / 2, by0 = 6;
     Rect b = rect(bx0, by0, bx0 + bw - 1, by0 + bh - 1);
+    int vanx = W.w / 2 + rng_range(&R, -10, 10);
+    reserve_van(vanx, W.h - 2);
     Rect lot = rect(1, b.y1 + 3, W.w - 2, W.h - 2);
     parking(lot, true);
     alley_dressing(rect(1, 1, W.w - 2, by0 - 1));
@@ -949,7 +1034,7 @@ static void gen_pharmacy(void) {
     int pi = prop_add(SPR_P_SIGN_PHARMACY, (d1[0] + 1) * TILE - 32, b.y1 * TILE - 4, 1);
     light_prop(pi);
     decay(b, 5);
-    place_van(W.w / 2 + rng_range(&R, -10, 10), W.h - 2);
+    place_van(vanx, W.h - 2);
     border(WL_RUIN);
 }
 
@@ -960,6 +1045,8 @@ static void gen_megamart(void) {
     Rect b = rect(bx0, by0, bx0 + bw - 1, by0 + bh - 1);
     static const int zones[] = {Z_GROCERY, Z_GROCERY, Z_DRINKS, Z_SNACKS, Z_PHARMACY, Z_ELECTRONICS, Z_HARDWARE, Z_HARDWARE};
     StoreStyle st = {FL_LINO, zones, 8, true, 8, true, 2, 8, 3};
+    int vanx = W.w / 2 + rng_range(&R, -14, 14);
+    reserve_van(vanx, W.h - 2);
     Rect lot = rect(1, b.y1 + 3, W.w - 2, W.h - 2);
     parking(lot, true);
     alley_dressing(rect(1, 1, W.w - 2, by0 - 1));
@@ -970,12 +1057,12 @@ static void gen_megamart(void) {
         int x = rng_range(&R, sales.x0 + 2, sales.x1 - 4), y = rng_range(&R, sales.y0 + 2, sales.y1 - 6);
         if (free_cell(x, y) && free_cell(x + 1, y)) {
             int pi = prop_add(SPR_P_FREEZER + rng_int(&R, 2), x * TILE, y * TILE, 0);
-            block_rect(rect(x, y, x + 1, y), CF_SOLID);
+            prop_block(pi, rect(x, y, x + 1, y), CF_SOLID);
             int ci = cont_new(x, y, Z_FRIDGE, "Freezer");
             if (ci >= 0) { W.conts[ci].prop = pi; W.conts[ci].pos = v2(x * TILE + 16, y * TILE + 8); }
         }
     }
-    place_van(W.w / 2 + rng_range(&R, -14, 14), W.h - 2);
+    place_van(vanx, W.h - 2);
     border(WL_HEDGE);
 }
 
@@ -996,7 +1083,8 @@ static void mall_shop(Rect r, int kind, bool door_bottom, int concourse_side) {
     case 1: {
         set_zone(r, Z_ELECTRONICS);
         static const int z[] = {Z_ELECTRONICS};
-        fill_aisles(r, z, 1, false);
+        /* first shelf row one lower: a walkway in front of the TV wall instead of sealed pockets */
+        fill_aisles(rect(r.x0, r.y0 + 1, r.x1, r.y1), z, 1, false);
         for (int x = r.x0; x <= r.x1; x++) if (free_cell(x, r.y0) && rng_chance(&R, 0.5f)) obj_at(x, r.y0, OB_TV, 0);
         break;
     }
@@ -1009,7 +1097,7 @@ static void mall_shop(Rect r, int kind, bool door_bottom, int concourse_side) {
     case 3:
         set_zone(r, Z_SNACKS);
         for (int x = r.x0 + 1; x <= r.x1 - 1; x++) obj_at(x, r.y0 + 2, OB_COUNTER, x == r.x0 + 1 ? 0 : (x == r.x1 - 1 ? 2 : 1));
-        fridges_along(r.x0, r.x1, r.y0, OB_FRIDGE_D, 0.4f);
+        fridges_along(r.x0, r.x1, r.y0, OB_FRIDGE_D);
         scatter_obj(rect(r.x0, r.y0 + 4, r.x1, r.y1), OB_BOX, 2, Z_SNACKS, "Box");
         break;
     default: {
@@ -1022,11 +1110,23 @@ static void mall_shop(Rect r, int kind, bool door_bottom, int concourse_side) {
     (void)concourse_side;
 }
 
+/* row nearest `want` in y0..y1 whose inside cell (column inx) isn't wall */
+static int side_door_row(int inx, int y0, int y1, int want) {
+    for (int d = 0; d <= y1 - y0; d++)
+        for (int s = -1; s <= 1; s += 2) {
+            int y = want + d * s;
+            if (y >= y0 && y <= y1 && !cell(inx, y)->wall) return y;
+        }
+    return want;
+}
+
 static void gen_mall(void) {
     base_outdoor();
     int bw = MINF(W.w - 24, 52), bh = W.h - 20;
     int bx0 = (W.w - bw) / 2, by0 = 3;
     Rect b = rect(bx0, by0, bx0 + bw - 1, by0 + bh - 1);
+    int vanx = W.w / 2 + rng_range(&R, -12, 12);
+    reserve_van(vanx, W.h - 2);
     Rect lot = rect(1, b.y1 + 3, W.w - 2, W.h - 2);
     parking(lot, true);
     /* overgrown flanks with abandoned cars */
@@ -1059,8 +1159,7 @@ static void gen_mall(void) {
         int x = rng_range(&R, garden.x0 + 2, garden.x1 - 4), y = rng_range(&R, garden.y0 + 1, garden.y1 - 3);
         if (abs(x - cx) < 6 && y > garden.y0 + 2) continue;
         if (free_cell(x, y) && free_cell(x + 1, y) && free_cell(x, y + 1) && free_cell(x + 1, y + 1)) {
-            prop_add(SPR_P_PLANTER, x * TILE, y * TILE, 0);
-            block_rect(rect(x, y, x + 1, y + 1), CF_SOLID);
+            prop_block(prop_add(SPR_P_PLANTER, x * TILE, y * TILE, 0), rect(x, y, x + 1, y + 1), CF_SOLID);
         }
     }
     for (int i = 0; i < 6; i++) {
@@ -1073,9 +1172,8 @@ static void gen_mall(void) {
     }
     /* the throne */
     int ty = garden.y0 + 2;
-    for (int y = ty - 1; y <= ty + 2; y++) for (int x = cx - 2; x <= cx + 1; x++) clear_at(x, y);
-    prop_add(SPR_P_THRONE, (cx - 1) * TILE, ty * TILE, 0);
-    block_rect(rect(cx - 1, ty, cx, ty + 1), CF_SOLID);
+    clear_rect(rect(cx - 2, ty - 1, cx + 1, ty + 2));
+    prop_block(prop_add(SPR_P_THRONE, (cx - 1) * TILE, ty * TILE, 0), rect(cx - 1, ty, cx, ty + 1), CF_SOLID);
     for (int k = -1; k <= 1; k += 2) {
         int bx = cx + k * 4;
         if (free_cell(bx, ty + 1)) obj_at(bx, ty + 1, OB_BARREL, 1);
@@ -1084,27 +1182,22 @@ static void gen_mall(void) {
     Rect conc = rect(cx - half, garden.y1 + 2, cx + half - 1, b.y1 - 1);
     floor_rect(conc, FL_MALL);
     int fy = conc.y0 + rh(conc) / 3;
-    prop_add(SPR_P_FOUNTAIN, (cx - 1.5f) * TILE, fy * TILE, 0);
-    block_rect(rect(cx - 1, fy, cx + 1, fy + 2), CF_SOLID);
+    prop_block(prop_add(SPR_P_FOUNTAIN, (cx - 1.5f) * TILE, fy * TILE, 0), rect(cx - 1, fy, cx + 1, fy + 2), CF_SOLID);
     /* food court: tables in the lower concourse */
     for (int y = fy + 6; y < conc.y1 - 4; y += 3)
         for (int x = conc.x0 + 1; x <= conc.x1 - 1; x += 4) {
             if (!free_cell(x, y) || rng_chance(&R, 0.25f)) continue;
-            prop_add(SPR_P_TABLE, x * TILE - 4, y * TILE - 4, 0);
-            block_rect(rect(x, y, x, y), CF_SOLID);
+            prop_block(prop_add(SPR_P_TABLE, x * TILE - 4, y * TILE - 4, 0), rect(x, y, x, y), CF_SOLID);
         }
     for (int y = conc.y0 + 2; y < fy - 1; y += 4) {
         if (free_cell(conc.x0 + 1, y) && free_cell(conc.x0 + 2, y) && free_cell(conc.x0 + 1, y + 1) && free_cell(conc.x0 + 2, y + 1)) {
-            prop_add(SPR_P_PLANTER, (conc.x0 + 1) * TILE, y * TILE, 0);
-            block_rect(rect(conc.x0 + 1, y, conc.x0 + 2, y + 1), CF_SOLID);
+            prop_block(prop_add(SPR_P_PLANTER, (conc.x0 + 1) * TILE, y * TILE, 0), rect(conc.x0 + 1, y, conc.x0 + 2, y + 1), CF_SOLID);
         }
         if (free_cell(conc.x1 - 2, y + 2) && free_cell(conc.x1 - 1, y + 2)) {
-            prop_add(SPR_P_BENCH, (conc.x1 - 2) * TILE, (y + 2) * TILE + 2, 0);
-            block_rect(rect(conc.x1 - 2, y + 2, conc.x1 - 1, y + 2), CF_SOLID);
+            prop_block(prop_add(SPR_P_BENCH, (conc.x1 - 2) * TILE, (y + 2) * TILE + 2, 0), rect(conc.x1 - 2, y + 2, conc.x1 - 1, y + 2), CF_SOLID);
         }
     }
-    prop_add(SPR_P_ESCALATOR, (conc.x1 - 1) * TILE, (fy + 1) * TILE, 0);
-    block_rect(rect(conc.x1 - 1, fy + 1, conc.x1, fy + 3), CF_SOLID);
+    prop_block(prop_add(SPR_P_ESCALATOR, (conc.x1 - 1) * TILE, (fy + 1) * TILE, 0), rect(conc.x1 - 1, fy + 1, conc.x1, fy + 3), CF_SOLID);
     /* shops on both sides */
     int kinds[] = {0, 1, 2, 3, 4, 0, 3, 1, 2};
     for (int side = 0; side < 2; side++) {
@@ -1121,8 +1214,14 @@ static void gen_mall(void) {
             Rect shop = rect(sx0, y, sx1, y1);
             if (y1 < conc.y1) hwall(sx0, sx1, y1 + 1, WL_MALL);
             mall_shop(shop, kinds[k % 9], false, side);
-            /* wide opening onto the concourse with a glass display beside it */
-            int oy = rng_range(&R, y + 1, MAXF(y + 1, y1 - 4));
+            /* wide opening onto the concourse with a glass display beside it - never behind the escalator */
+            int olo = y + 1, ohi = MAXF(y + 1, y1 - 4), cside = side == 0 ? wallx + 1 : wallx - 1;
+            int o0 = rng_range(&R, olo, ohi), oy = o0, best = -1;
+            for (int t = 0; t <= ohi - olo; t++) {
+                int cand = olo + (o0 - olo + t) % (ohi - olo + 1), open = 0;
+                for (int k2 = 0; k2 < 3; k2++) if (!cell_flag(cside, MINF(cand + k2, y1), CF_SOLID)) open++;
+                if (open > best) { best = open; oy = cand; }
+            }
             for (int k2 = 0; k2 < 3; k2++) {
                 int yy = MINF(oy + k2, y1);
                 clear_at(wallx, yy);
@@ -1142,19 +1241,20 @@ static void gen_mall(void) {
     storefront(b.x0 + 1, b.x1 - 1, b.y1, doors, 2, 0.3f);
     int pi = prop_add(SPR_P_SIGN_MALL, cx * TILE - 40, b.y1 * TILE - 4, 1);
     light_prop(pi);
-    /* side doors to the flanks */
-    int sdy = (conc.y0 + conc.y1) / 2;
+    /* side doors to the flanks, opening into a shop rather than a wall between two */
+    int sdy = side_door_row(b.x0 + 1, conc.y0 + 1, conc.y1 - 1, (conc.y0 + conc.y1) / 2);
+    int sdy2 = side_door_row(b.x1 - 1, conc.y0 + 1, conc.y1 - 1, (conc.y0 + conc.y1) / 2 + 3);
     door_add(b.x0, sdy, false, false, 0);
-    door_add(b.x1, sdy + 3, false, false, 1);
-    clear_at(b.x0 - 1, sdy); floor_at(b.x0 - 1, sdy, FL_ASPHALT);
-    clear_at(b.x1 + 1, sdy + 3); floor_at(b.x1 + 1, sdy + 3, FL_ASPHALT);
-    /* the King's lights: burning barrels along the concourse */
+    door_add(b.x1, sdy2, false, false, 1);
+    clear_rect(rect(b.x0 - 1, sdy, b.x0 - 1, sdy)); floor_at(b.x0 - 1, sdy, FL_ASPHALT);
+    clear_rect(rect(b.x1 + 1, sdy2, b.x1 + 1, sdy2)); floor_at(b.x1 + 1, sdy2, FL_ASPHALT);
+    /* the King's lights: burning barrels along the concourse, against solid wall (not a shop front) */
     for (int y = conc.y0 + 2; y < conc.y1; y += 7) {
         int x = rng_chance(&R, 0.5f) ? conc.x0 : conc.x1;
-        if (free_cell(x, y)) obj_at(x, y, OB_BARREL, 1);
+        if (free_cell(x, y) && cell(x == conc.x0 ? x - 1 : x + 1, y)->wall) obj_at(x, y, OB_BARREL, 1);
     }
     decay(b, 6);
-    place_van(W.w / 2 + rng_range(&R, -12, 12), W.h - 2);
+    place_van(vanx, W.h - 2);
     border(WL_RUIN);
 }
 
@@ -1184,14 +1284,28 @@ static void compute_reach(void) {
     }
 }
 
+/* someone can step up to it: an open, reachable tile orthogonally next to the container - for a big prop,
+ * next to any cell of its footprint and close enough to its centre to search. A corner touch doesn't count. */
 static bool cont_reachable(Container *c) {
     if (c->dead) return false;
-    int tx = tile_of(c->pos.x), ty = tile_of(c->pos.y);
-    int r = c->prop >= 0 ? 2 : 1;
-    for (int y = ty - r; y <= ty + r; y++)
-        for (int x = tx - r; x <= tx + r; x++)
-            if (in_map(x, y) && cell(x, y)->reach && !(cell(x, y)->flags & CF_SOLID)) return true;
+    Rect f = rect(c->tx, c->ty, c->tx, c->ty);
+    if (c->prop >= 0 && prop_has_fp[c->prop]) f = prop_fp[c->prop];
+    for (int y = f.y0; y <= f.y1; y++)
+        for (int x = f.x0; x <= f.x1; x++)
+            for (int k = 0; k < 4; k++) {
+                int nx = x + (k == 0) - (k == 1), ny = y + (k == 2) - (k == 3);
+                if (!in_map(nx, ny) || !cell(nx, ny)->reach || (cell(nx, ny)->flags & CF_SOLID)) continue;
+                if (c->prop >= 0 && v2_dist(tile_center(nx, ny), c->pos) > 36) continue;
+                return true;
+            }
     return false;
+}
+
+/* still searchable through its cell (or its prop)? anything a later pass built over has lost it */
+static bool cont_linked(int i) {
+    Container *c = &W.conts[i];
+    if (c->prop >= 0) return c->prop < W.nprops;
+    return in_map(c->tx, c->ty) && cell(c->tx, c->ty)->cont == i;
 }
 
 /* ============================================================ population */
@@ -1200,6 +1314,14 @@ static int spawn_npc(int arch, V2 pos) {
     if (i < 0) return -1;
     Actor *a = &W.actors[i];
     const ArchDef *ad = &ARCH[arch];
+    /* actor_spawn rolls these on the fx RNG; re-roll them from the level seed so a retry meets the same people */
+    a->face = rng_rangef(&R, -PI_F, PI_F);
+    a->speed_mul = rng_rangef(&R, 0.92f, 1.08f);
+    a->br.think = rng_rangef(&R, 0, 0.5f);
+    a->br.strafe_dir = rng_chance(&R, 0.5f) ? 1.0f : -1.0f;
+    a->temper = ad->temper;
+    if (arch == AR_SCAV && rng_chance(&R, 0.35f)) a->temper = TEMP_DEFENSIVE;
+    if (arch == AR_LOOTER && rng_chance(&R, 0.3f)) a->temper = TEMP_TIMID;
     ItemId wpn = ad->weapons[rng_int(&R, 6)];
     if (W.level <= 1 && (wpn == IT_SHOTGUN || wpn == IT_RIFLE || wpn == IT_CHAINSAW)) wpn = IT_PISTOL;
     if (arch == AR_PIG && wpn == IT_CHAINSAW && W.level < 4) wpn = IT_CLEAVER;
@@ -1240,12 +1362,123 @@ static int spawn_npc(int arch, V2 pos) {
 
 int gen_spawn_npc(int arch, V2 pos) { return spawn_npc(arch, pos); }
 
+/* a squad member's spot: same rules as the leader's (random_floor_spot), and not behind a wall from them */
+static bool follower_spot_ok(V2 p, V2 leader, bool indoor, float min_dist) {
+    int tx = tile_of(p.x), ty = tile_of(p.y);
+    if (!in_map(tx, ty)) return false;
+    Cell *c = cell(tx, ty);
+    if ((c->flags & (CF_SOLID | CF_NOSPAWN | CF_EXIT)) || c->obj || !c->reach) return false;
+    if (indoor != ((c->flags & CF_INDOOR) != 0)) return false;
+    if (v2_dist(p, W.spawn) < min_dist) return false;
+    return los_clear(leader, p, true);
+}
+
+/* strays where people used to live: dogs and foxes mostly outside, rats in the back rooms, cats anywhere.
+ * Healthy dogs and rats keep together; the rabid ones roam alone and start further from the van.
+ * Exactly the level's share of them is rabid (at least one): *rabid of the *left still to place. */
+static void populate_animals(int ar, int n, int *rabid_left, int *left) {
+    float outside = ar == AR_RAT ? 0.15f : (ar == AR_CAT ? 0.5f : 0.8f);
+    int i = 0;
+    while (i < n) {
+        bool rabid = rng_int(&R, *left) < *rabid_left;
+        bool outdoor = rng_chance(&R, outside);
+        float mind = rabid ? 260 : 170;
+        V2 p = random_floor_spot(&R, !outdoor, mind, W.spawn);
+        int group = 1;
+        if (!rabid && (ar == AR_DOG || ar == AR_RAT) && n - i >= 2 && rng_chance(&R, 0.5f)) group = rng_range(&R, 2, MINF(3, n - i));
+        if (!rabid) group = MINF(group, *left - *rabid_left);   /* leave room for the rabid ones still to come */
+        for (int g = 0; g < group; g++) {
+            V2 gp = p;
+            for (int t = 0; g > 0 && t < 10; t++) {
+                gp = v2(p.x + rng_rangef(&R, -20, 20), p.y + rng_rangef(&R, -20, 20));
+                if (follower_spot_ok(gp, p, !outdoor, mind)) break;
+                gp = p;
+            }
+            int ai = spawn_npc(ar, gp);
+            if (ai < 0) return;   /* actor table full */
+            animal_setup(&W.actors[ai], &R, rabid);
+            if (rabid) (*rabid_left)--;
+            (*left)--;
+            i++;
+        }
+    }
+}
+
+/* three winters of nobody weeding. A plant takes root on open floor (a rooted one must never plug a gap - it
+ * won't be shoved aside), well away from the van and from the other weeds; somewhere green if it can: the garden
+ * centre, grass and dirt, the rubble under a hole in the roof */
+static bool plant_spot(float min_dist, bool indoor, int *ox, int *oy) {
+    for (int pass = 0; pass < 3; pass++)
+        for (int t = 0; t < 400; t++) {
+            int tx = rng_range(&R, 2, W.w - 3), ty = rng_range(&R, 2, W.h - 3);
+            Cell *c = cell(tx, ty);
+            if ((c->flags & (CF_SOLID | CF_NOSPAWN | CF_EXIT | CF_DOOR)) || c->obj || !c->reach) continue;
+            bool green = c->zone == Z_GARDEN || c->floor == FL_GRASS || c->floor == FL_DIRT || (c->flags & CF_SKY);
+            if (pass == 0 && !green) continue;
+            if (pass < 2 && indoor != ((c->flags & CF_INDOOR) != 0)) continue;
+            V2 p = tile_center(tx, ty);
+            if (v2_dist(p, W.spawn) < min_dist) continue;
+            if (W.boss >= 0 && v2_dist(p, W.actors[W.boss].pos) < 170) continue;   /* the King keeps his court weeded */
+            bool open = true;
+            for (int y = ty - 1; y <= ty + 1 && open; y++)
+                for (int x = tx - 1; x <= tx + 1 && open; x++) open = !(cell(x, y)->flags & (CF_SOLID | CF_DOOR));
+            for (int i = 1; i < W.nactors && open; i++)
+                if (W.actors[i].used && is_plant(&W.actors[i]) && v2_dist(W.actors[i].pos, p) < 56) open = false;
+            if (!open) continue;
+            *ox = tx;
+            *oy = ty;
+            return true;
+        }
+    return false;
+}
+
+/* the spitters' bed: a patch of turned earth gone to weed */
+static void flowerbed(int cx, int cy) {
+    for (int y = cy - 1; y <= cy + 1; y++)
+        for (int x = cx - 1; x <= cx + 1; x++) {
+            if (!free_cell(x, y) || (cell(x, y)->flags & CF_EXIT)) continue;
+            if (abs(x - cx) + abs(y - cy) == 2 && rng_chance(&R, 0.6f)) continue;   /* round the corners off */
+            floor_at(x, y, FL_DIRT);
+            V2 p = tile_center(x, y);
+            if (rng_chance(&R, 0.6f)) decor(SPR_O_GRASS_TUFT + rng_int(&R, SPR_O_GRASS_TUFT_N), p.x + rng_range(&R, -6, 6), p.y + rng_range(&R, -6, 6), 0, 0);
+        }
+}
+
+/* spitters in beds of two or three, nettles alone or in pairs - half of them indoors where the roof gave way or
+ * the floor cracked - and ramblers wherever they last stopped, half of them dug in and passing for a bush */
+static void populate_plants(int ar, int n) {
+    float indoors = ar == AR_NETTLE ? 0.5f : (ar == AR_SPITTER ? 0.2f : 0.35f);
+    float mind = ar == AR_NETTLE ? 170 : 230;
+    for (int i = 0, tries = 0; i < n && tries < 40; tries++) {
+        int tx, ty;
+        if (!plant_spot(mind, rng_chance(&R, indoors), &tx, &ty)) return;
+        int group = 1;
+        if (ar == AR_SPITTER && n - i >= 2 && rng_chance(&R, 0.65f)) group = rng_range(&R, 2, MINF(3, n - i));
+        if (ar == AR_NETTLE && n - i >= 2 && rng_chance(&R, 0.3f)) group = 2;
+        if (ar == AR_SPITTER) flowerbed(tx, ty);
+        /* a bed of them stands round its middle, a stalk's width apart */
+        V2 c = tile_center(tx, ty);
+        float turn = rng_rangef(&R, -PI_F, PI_F);
+        for (int g = 0; g < group; g++) {
+            V2 p = c;
+            if (group > 1) p = v2_add(c, v2_scale(v2_angle(turn + g * 2 * PI_F / group + rng_rangef(&R, -0.2f, 0.2f)), rng_rangef(&R, 9.5f, 11.5f)));
+            int ai = spawn_npc(ar, p);
+            if (ai < 0) return;   /* actor table full */
+            plant_setup(&W.actors[ai], &R);
+            i++;
+        }
+    }
+}
+
 static void populate(void) {
     const LevelDef *d = W.def;
+    int animals[AR_COUNT] = {0}, nanimals = 0, plants[AR_COUNT] = {0};
     for (int ar = AR_SCAV; ar < AR_COUNT; ar++) {
         int n = d->npcs[ar];
         if (n <= 0) continue;
         if (ar != AR_BOSS && n > 1) n += rng_range(&R, -1, 1);
+        if (ARCH[ar].animal) { animals[ar] = n; nanimals += n; continue; }
+        if (ARCH[ar].plant) { plants[ar] = n; continue; }
         int i = 0;
         while (i < n) {
             if (ar == AR_BOSS) {
@@ -1269,7 +1502,8 @@ static void populate(void) {
                 continue;
             }
             bool outdoor = (ar == AR_RAIDER || ar == AR_FERAL) && rng_chance(&R, 0.25f);
-            V2 p = random_floor_spot(&R, !outdoor, outdoor ? 300 : 230, W.spawn);
+            float mind = outdoor ? 300 : 230;
+            V2 p = random_floor_spot(&R, !outdoor, mind, W.spawn);
             int group = 1;
             if ((ar == AR_RAIDER || ar == AR_PIG) && n - i >= 2 && rng_chance(&R, 0.5f)) group = rng_range(&R, 2, MINF(3, n - i));
             int leader = -1;
@@ -1278,25 +1512,36 @@ static void populate(void) {
                 if (g > 0) {
                     for (int t = 0; t < 10; t++) {
                         gp = v2(p.x + rng_rangef(&R, -28, 28), p.y + rng_rangef(&R, -28, 28));
-                        if (!solid_at(gp.x, gp.y)) break;
+                        if (follower_spot_ok(gp, p, !outdoor, mind)) break;
                         gp = p;
                     }
                 }
                 int ai = spawn_npc(ar, gp);
-                if (ai < 0) continue;
+                if (ai < 0) { i = n; break; }   /* actor table full: give up on this kind */
                 if (g == 0) leader = ai;
                 else W.actors[ai].br.leader = leader;
                 if ((ar == AR_GUNNER || ar == AR_BRUTE) && rng_chance(&R, 0.6f)) W.actors[ai].br.state = AI_GUARD;
                 i++;
             }
-            if (group == 0) i++;
         }
     }
+    /* then the weeds, and the animals last: people get the good spots */
+    for (int ar = AR_SCAV; ar < AR_COUNT; ar++)
+        if (plants[ar] > 0) populate_plants(ar, plants[ar]);
+    int rabid = nanimals > 0 ? MAXF(1, (int)(nanimals * d->rabid + 0.5f)) : 0;
+    for (int ar = AR_SCAV; ar < AR_COUNT; ar++)
+        if (animals[ar] > 0) populate_animals(ar, animals[ar], &rabid, &nanimals);
 }
 
 /* ------------------------------------------------------- shopping list */
 static bool list_has(ItemId id) {
     for (int i = 0; i < W.nlist; i++) if (W.list[i].id == id) return true;
+    return false;
+}
+
+/* asked for by somebody at the camp: never on the list or the bonus line, only where place_favours puts it */
+static bool favour_has(ItemId id) {
+    for (int i = 0; i < W.nfav; i++) if (W.fav[i].id == id) return true;
     return false;
 }
 
@@ -1334,6 +1579,74 @@ static void cont_put(int ci, ItemId id, int count) {
     c->items[c->n++] = s;
 }
 
+/* the k-th toughest person here who'd keep something in their pockets (the hardest to take it off), or -1 */
+static int favour_carrier(int k) {
+    int cand[MAX_ACTORS], n = 0;
+    for (int i = 1; i < MAX_ACTORS; i++) {
+        Actor *a = &W.actors[i];
+        if (!a->used || !a->alive || a->arch == AR_BOSS || a->arch == AR_FERAL || is_animal(a) || is_plant(a) || is_camp(a)) continue;
+        if (!cell(tile_of(a->pos.x), tile_of(a->pos.y))->reach) continue;
+        cand[n++] = i;
+    }
+    if (n == 0) return -1;
+    /* toughest first (what they're worth to beat), the ones further from the van before the nearer */
+    for (int i = 1; i < n; i++)
+        for (int j = i; j > 0; j--) {
+            Actor *a = &W.actors[cand[j]], *b = &W.actors[cand[j - 1]];
+            int sa = ARCH[a->arch].score, sb = ARCH[b->arch].score;
+            if (sa < sb || (sa == sb && v2_dist2(a->pos, W.van) <= v2_dist2(b->pos, W.van))) break;
+            int t = cand[j]; cand[j] = cand[j - 1]; cand[j - 1] = t;
+        }
+    return cand[k % n];
+}
+
+/* the deepest back room: indoors, stockrooms, offices and staff lockers first, then the furthest from the van */
+static int favour_stash(void) {
+    int best = -1;
+    float bs = -1;
+    for (int i = 0; i < W.nconts; i++) {
+        Container *c = &W.conts[i];
+        if (c->zone == Z_CAR || c->n >= 6 || !cont_reachable(c)) continue;
+        float s = v2_dist(c->pos, W.van);
+        if (c->zone == Z_STORAGE || c->zone == Z_OFFICE || c->zone == Z_STAFF) s += 2000;
+        if (!cell_flag(c->tx, c->ty, CF_INDOOR)) s -= 4000;   /* not out by the bins */
+        if (s > bs) { bs = s; best = i; }
+    }
+    return best;
+}
+
+/* the camp's favours: whatever of it the store already had goes, then exactly what was asked for is put where it's
+   hard to get - in the toughest pockets here, or at the back of the deepest back room */
+static void place_favours(void) {
+    for (int f = 0; f < W.nfav; f++) {
+        ItemId id = W.fav[f].id;
+        for (int i = 0; i < W.nconts; i++) {
+            Container *c = &W.conts[i];
+            for (int k = c->n - 1; k >= 0; k--)
+                if (c->items[k].id == id) { memmove(&c->items[k], &c->items[k + 1], sizeof(Stack) * (c->n - k - 1)); c->n--; }
+        }
+        for (int i = 1; i < MAX_ACTORS; i++)
+            if (W.actors[i].used) inv_remove(&W.actors[i], id, inv_count(&W.actors[i], id));
+        for (int i = 0; i < MAX_CARTS; i++) {
+            Cart *c = &W.carts[i];
+            for (int k = c->n - 1; k >= 0; k--)
+                if (c->items[k].id == id) { memmove(&c->items[k], &c->items[k + 1], sizeof(Stack) * (c->n - k - 1)); c->n--; }
+        }
+        for (int i = 0; i < MAX_PICKUPS; i++)
+            if (W.pickups[i].alive && W.pickups[i].st.id == id) W.pickups[i].alive = false;
+        const FavourDef *fd = &FAVOURS[W.fav_of[f]];
+        for (int u = 0; u < W.fav[f].need; u++) {
+            int ai = fd->where == FW_CARRIED ? favour_carrier(u) : -1;
+            int ci = ai < 0 ? favour_stash() : -1;
+            Stack s = {(int16_t)id, 1, 0, 0};
+            if (ai >= 0) inv_add(&W.actors[ai], s);
+            else if (ci >= 0) cont_put(ci, id, 1);
+            SDL_Log("FAVOUR: %s for %s -> %s", ITEMS[id].name, ARCH[fd->arch].name,
+                    ai >= 0 ? ARCH[W.actors[ai].arch].name : ci >= 0 ? (W.conts[ci].name ? W.conts[ci].name : "a container") : "nowhere");
+        }
+    }
+}
+
 static void make_list(void) {
     const LevelDef *d = W.def;
     W.nlist = 0;
@@ -1344,12 +1657,22 @@ static void make_list(void) {
         e->id = d->must[i].id;
         e->need = d->must[i].n;
     }
+    /* the favours the camp asked for this store (the title screen's backdrop store has nobody to ask) */
+    W.nfav = 0;
+    for (int f = 0; RUN.active && f < NUM_FAVOURS && W.nfav < ARRAY_LEN(W.fav); f++) {
+        if (FAVOURS[f].level != W.level || RUN.favour[f] != FS_OPEN || list_has(FAVOURS[f].item) || favour_has(FAVOURS[f].item)) continue;
+        ListEntry *e = &W.fav[W.nfav];
+        memset(e, 0, sizeof *e);
+        e->id = FAVOURS[f].item;
+        e->need = FAVOURS[f].n;
+        W.fav_of[W.nfav++] = f;
+    }
     int npool = 0;
     while (npool < 10 && d->pool[npool]) npool++;
     for (int k = 0; k < d->pool_picks && npool > 0; k++) {
         for (int t = 0; t < 20; t++) {
             ItemId id = d->pool[rng_int(&R, npool)];
-            if (list_has(id)) continue;
+            if (list_has(id) || favour_has(id)) continue;
             ListEntry *e = &W.list[W.nlist++];
             memset(e, 0, sizeof *e);
             e->id = id;
@@ -1363,7 +1686,7 @@ static void make_list(void) {
     for (int k = 0; k < d->bonus_picks && nb > 0; k++) {
         for (int t = 0; t < 20; t++) {
             ItemId id = d->bonus[rng_int(&R, nb)];
-            bool dup = list_has(id);
+            bool dup = list_has(id) || favour_has(id);
             for (int j = 0; j < W.nbonus; j++) if (W.bonus[j].id == id) dup = true;
             if (dup) continue;
             ListEntry *e = &W.bonus[W.nbonus++];
@@ -1378,7 +1701,7 @@ static void make_list(void) {
     int nc = 0;
     for (int i = 1; i < MAX_ACTORS; i++) {
         Actor *a = &W.actors[i];
-        if (!a->used || !a->alive || a->arch == AR_BOSS || a->arch == AR_FERAL) continue;
+        if (!a->used || !a->alive || a->arch == AR_BOSS || a->arch == AR_FERAL || is_animal(a) || is_plant(a)) continue;
         if (!cell(tile_of(a->pos.x), tile_of(a->pos.y))->reach) continue;
         carriers[nc++] = i;
     }
@@ -1399,6 +1722,7 @@ static void make_list(void) {
         int ci = random_container_for(W.bonus[i].id);
         if (ci >= 0) cont_put(ci, W.bonus[i].id, 1);
     }
+    place_favours();
 }
 
 /* ============================================================== entry */
@@ -1416,13 +1740,9 @@ void gen_level(int level, uint64_t seed) {
     case LK_PHARMACY: gen_pharmacy(); break;
     case LK_MEGAMART: gen_megamart(); break;
     case LK_MALL: gen_mall(); break;
+    case LK_GREENHOUSE: break;   /* gen_hub */
     }
-    /* make sure the exit zone and spawn are clear */
-    for (int i = 0; i < W.ndoors; i++) {
-        Door *d = &W.doors[i];
-        (void)d;
-    }
-    /* doors must never open straight into furniture */
+    /* doors must never open straight into furniture: big props (dumpsters, cars, trees) go whole */
     for (int i = 0; i < W.ndoors; i++) {
         Door *d = &W.doors[i];
         int tx = tile_of(d->hinge.x + cosf(d->base) * 7), ty = tile_of(d->hinge.y + sinf(d->base) * 7);
@@ -1432,13 +1752,21 @@ void gen_level(int level, uint64_t seed) {
             if (!in_map(nx, ny)) continue;
             Cell *c = cell(nx, ny);
             if (c->wall || !c->obj) continue;
-            if (c->cont >= 0) { W.conts[c->cont].dead = true; W.conts[c->cont].n = 0; }
-            if (c->obj == OB_BLOCKER) continue;   /* part of a big prop: leave it */
-            clear_at(nx, ny);
+            clear_rect(rect(nx, ny, nx, ny));
         }
     }
+    settle_carts();
     vines();
     compute_reach();
+    /* containers that lost their cell, or that nobody can step up to (walled in by clutter, or only touched at
+     * a corner): they stay empty - drawn emptied - and off the AI's and the shopping list's books */
+    for (int i = 0; i < W.nconts; i++) {
+        Container *c = &W.conts[i];
+        if (c->dead || (cont_linked(i) && cont_reachable(c))) continue;
+        c->dead = true;
+        c->searched = true;
+        c->n = 0;
+    }
     /* fill containers with random loot */
     for (int i = 0; i < W.nconts; i++) container_fill(&W.conts[i], &R);
     /* the player first, then everybody else */
@@ -1446,5 +1774,263 @@ void gen_level(int level, uint64_t seed) {
     (void)pi;
     populate();
     make_list();
+    map_compute_autotile();
+}
+
+/* ============================================================ the Greenhouse */
+/* The camp between the stores: the same yard every evening (hand laid, one char per tile):
+ *   # hedge   G greenhouse glass   B brick (the workshop, the range wall)
+ *   . grass   : dirt   d a bed of crops   c concrete   w boards   s path   a asphalt   l the range's firing line */
+static const char *const HUB_MAP[44] = {
+    "############################################################",
+    "#..........................................................#",
+    "#..........................................................#",
+    "#...........GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG...........#",
+    "#...........GcccccccccccccccccccccccwwwwwwwwwwwG...........#",
+    "#...........GcddddcddddcccccccccccccwwwwwwwwwwwG...........#",
+    "#...........GcddddcddddcccccccccccccwwwwwwwwwwwG...........#",
+    "#...........GcccccccccccccccccccccccwwwwwwwwwwwG...........#",
+    "#...........GcddddcddddcccccccccccccwwwwwwwwwwwG...........#",
+    "#...........GcddddcddddcccccccccccccwwwwwwwwwwwG...........#",
+    "#...........GcccccccccccccccccccccccwwwwwwwwwwwG...........#",
+    "#...........ccccccccccccccccccccccccwwwwwwwwwwwc...........#",
+    "#...........ccccccccccccccccccccccccwwwwwwwwwwwc...........#",
+    "#...........GcccccccccccccccccccccccwwwwwwwwwwwG...........#",
+    "#...........GcddddcddddcccccccccccccwwwwwwwwwwwG...........#",
+    "#...........GcddddcddddcccccccccccccwwwwwwwwwwwG...........#",
+    "#...........GcccccccccccccccccccccccwwwwwwwwwwwG...........#",
+    "#...........GcddddcddddcccccccccccccwwwwwwwwwwwG...........#",
+    "#...........GcddddcddddcccccccccccccwwwwwwwwwwwG...........#",
+    "#...........GGGGGGGGGGGGGGGGGccGGGGGGGGGGGGGGGGG...........#",
+    "#............ssssssssssssssssssssssssssssssssss............#",
+    "#............ssssssssssssssssssssssssssssssssss.BBBBBBBBBB.#",
+    "#..ccccccccc.ss..............ss.................BccccccccB.#",
+    "#..ccccccccc.................ss.................BccccccccB.#",
+    "#..ccccccccc.................ss.................BccccccccB.#",
+    "#..ccccccccc.........:::.....ssssssssssssssssssscccccccccB.#",
+    "#..ccccccccc........:::::....ssssssssssssssssssscccccccccB.#",
+    "#..ccccccccc.......:::::::...ss.................BccccccccB.#",
+    "#..ccccccccc.......:::::::...ss.................BccccccccB.#",
+    "#..ccccccccc........:::::....ss.................BccccccccB.#",
+    "#..ccccccccc.........:::.....ss.............BBBBBBBBBBBBBB.#",
+    "#............................ss...............:::::::::::::#",
+    "#............................ss...............:l:::::::::::#",
+    "#............................ss...............:l:::::::::::#",
+    "#..dddddd....................ss...............:l:::::::::::#",
+    "#..dddddd................aaaaaaaaaa...........:l:::::::::::#",
+    "#...........:::..........aaaaaaaaaa...........:l:::::::::::#",
+    "#...........:::..........aaaaaaaaaa...........:l:::::::::::#",
+    "#..dddddd................aaaaaaaaaa...........:l:::::::::::#",
+    "#..dddddd................aaaaaaaaaa...........:l:::::::::::#",
+    "#........................aaaaaaaaaa...........:l:::::::::::#",
+    "#........................aaaaaaaaaa...........:l:::::::::::#",
+    "#........................aaaaaaaaaa...........:::::::::::::#",
+    "###########################aaaaaa###########################",
+};
+
+static void hub_tile(int x, int y, char ch) {
+    Cell *c = cell(x, y);
+    memset(c, 0, sizeof *c);
+    c->cont = -1;
+    switch (ch) {
+    case '#': floor_at(x, y, FL_GRASS); wall_at(x, y, WL_HEDGE); break;
+    case 'G': floor_at(x, y, FL_CONCRETE); wall_at(x, y, WL_GLASS); break;
+    case 'B': floor_at(x, y, FL_CONCRETE); wall_at(x, y, WL_BRICK); break;
+    case ':': floor_at(x, y, FL_DIRT); break;
+    case 'd': floor_at(x, y, FL_DIRT); break;
+    case 'c': floor_at(x, y, FL_CONCRETE); break;
+    case 'w': floor_at(x, y, FL_WOOD); break;
+    case 's': floor_at(x, y, FL_SIDEWALK); break;
+    case 'a': floor_at(x, y, FL_ASPHALT); break;
+    case 'l': floor_at(x, y, FL_ASPHALT_LINE); break;
+    default: floor_at(x, y, rng_chance(&R, 0.93f) ? FL_GRASS : FL_DIRT); break;
+    }
+}
+
+/* one of the yard's crates or piles: a few odds and ends for the workbench, new every evening */
+static void hub_cont(int k, int ci, Rng *loot) {
+    if (ci < 0) return;
+    Container *c = &W.conts[ci];
+    const LootEntry *t = LOOT[Z_HUB];
+    int tot = 0;
+    for (int i = 0; i < LOOT_N[Z_HUB]; i++) tot += t[i].weight;
+    int n = rng_chance(loot, 0.45f) ? 2 : 1;
+    for (int j = 0; j < n; j++) {
+        int roll = rng_int(loot, tot);
+        for (int i = 0; i < LOOT_N[Z_HUB]; i++) {
+            if ((roll -= t[i].weight) >= 0) continue;
+            cont_put(ci, t[i].id, rng_range(loot, t[i].lo, t[i].hi));
+            break;
+        }
+    }
+    if (RUN.hub_done & HD_CONT(k)) { c->n = 0; c->searched = true; }   /* already went through it this evening */
+}
+
+static int hub_obj_cont(int x, int y, int obj, int var, const char *name) {
+    obj_at(x, y, obj, var);
+    return cont_new(x, y, Z_HUB, name);
+}
+
+static int hub_prop(int spr, int tx, int ty, Rect block, int flags) {
+    int pi = prop_add(spr, tx * TILE, ty * TILE, 0);
+    if (block.x1 >= block.x0) prop_block(pi, block, flags);
+    return pi;
+}
+
+void gen_hub(uint64_t seed) {
+    rng_seed(&R, seed ^ 0x6A09E667F3BCC909ull);   /* the same weeds and puddles every evening of a run */
+    W.level = RUN.level;
+    W.def = &HUB_DEF;
+    W.w = W.def->map_w;
+    W.h = W.def->map_h;
+    W.boss = -1;
+    memset(&HUB, 0, sizeof HUB);
+    for (int y = 0; y < W.h; y++)
+        for (int x = 0; x < W.w; x++) hub_tile(x, y, HUB_MAP[y][x]);
+    /* under the glass: indoors, but the evening light falls straight in */
+    for (int y = 3; y <= 19; y++)
+        for (int x = 12; x <= 47; x++) cell(x, y)->flags |= CF_INDOOR | CF_SKY;
+    mark_indoor(rect(48, 21, 57, 30));
+    /* dressing */
+    for (int y = 1; y < W.h - 1; y++)
+        for (int x = 1; x < W.w - 1; x++) {
+            Cell *c = cell(x, y);
+            if (c->wall) continue;
+            V2 p = tile_center(x, y);
+            char ch = HUB_MAP[y][x];
+            if (ch == 'd') decor(SPR_O_CROP + (y / 3 + x / 5) % SPR_O_CROP_N, p.x, p.y, 0, 0);
+            else if (c->floor == FL_GRASS || c->floor == FL_DIRT) {
+                if (rng_chance(&R, 0.18f)) decor(SPR_O_GRASS_TUFT + rng_int(&R, SPR_O_GRASS_TUFT_N), p.x + rng_range(&R, -6, 6), p.y + rng_range(&R, -6, 6), 0, 0);
+                if (rng_chance(&R, 0.03f)) decor(SPR_O_LEAVES + rng_int(&R, SPR_O_LEAVES_N), p.x, p.y, rng_int(&R, 2), 0);
+            } else if (c->floor == FL_ASPHALT || c->floor == FL_SIDEWALK) {
+                if (rng_chance(&R, 0.08f)) decor(SPR_O_CRACK + rng_int(&R, SPR_O_CRACK_N), p.x, p.y, rng_int(&R, 2), 0);
+                if (rng_chance(&R, 0.10f)) decor(SPR_O_GRASS_TUFT + rng_int(&R, SPR_O_GRASS_TUFT_N), p.x + rng_range(&R, -6, 6), p.y, 0, 0);
+            } else if ((c->flags & CF_INDOOR) && rng_chance(&R, 0.04f))
+                decor(SPR_O_LEAVES + rng_int(&R, SPR_O_LEAVES_N), p.x, p.y, rng_int(&R, 2), 0);
+        }
+    decor(SPR_O_PUDDLE, 27 * TILE, 41 * TILE, 0, 0);
+    decor(SPR_O_PUDDLE + 1, 38 * TILE, 22 * TILE + 8, 0, 0);
+
+    int pantry = -1, junk = -1, toolbox = -1, scrap = -1, car = -1;
+    /* the greenhouse: Rosa's radio desk, the kitchen and the stove, the beds of crops, the sleeping boards */
+    hub_prop(SPR_P_DESK, 27, 4, rect(27, 4, 28, 4), CF_SOLID | CF_SHOT);
+    for (int k = 0; k < 3; k++) obj_at(32 + k, 4, OB_COUNTER, k);
+    pantry = hub_obj_cont(35, 4, OB_CRATE, 0, "Pantry crate");
+    hub_prop(SPR_P_TABLE, 25, 9, rect(25, 9, 26, 10), CF_SOLID);
+    obj_at(31, 11, OB_CAMPFIRE, 0);
+    hub_prop(SPR_P_BENCH, 24, 15, rect(24, 15, 25, 15), CF_SOLID);
+    hub_prop(SPR_P_PLANTER, 28, 14, rect(28, 14, 29, 15), CF_SOLID);   /* seedlings, the start of next year */
+    hub_prop(SPR_P_PLANTER, 32, 14, rect(32, 14, 33, 15), CF_SOLID);
+    obj_at(35, 17, OB_BOX, 0);
+    obj_at(35, 18, OB_CRATE, 0);
+    junk = hub_obj_cont(23, 18, OB_CRATE, 0, "Junk crate");
+    obj_at(13, 18, OB_BOX, 0);
+    obj_at(13, 4, OB_BOX, 2);
+    HUB.theo_sick = RUN.level == 3;   /* the fever the Medimart briefing is about */
+    for (int row = 0; row < 2; row++)
+        for (int i = 0; i < 4; i++) {
+            int spr = row == 1 && i == 3 && HUB.theo_sick ? SPR_P_SICKBED : SPR_P_MATTRESS;
+            prop_add(spr, 37 * TILE + i * 28, (row ? 16 : 4) * TILE, 0);
+        }
+    prop_add(SPR_P_SLEEPINGBAG, 38 * TILE, 10 * TILE, 0);
+    prop_add(SPR_P_SLEEPINGBAG, 41 * TILE + 6, 9 * TILE + 4, 0);
+    obj_at(46, 8, OB_LOCKER, 0);
+    obj_at(46, 4, OB_BOX, 1);
+    HUB.locker = tile_center(46, 8);
+    /* the gym */
+    hub_prop(SPR_P_BENCHPRESS, 5, 24, rect(5, 24, 5, 25), CF_SOLID);   /* the rack; you lie on the pad */
+    HUB.bench = v2(5 * TILE + 16, 24 * TILE + 12);
+    hub_prop(SPR_P_WEIGHTS, 9, 23, rect(9, 23, 9, 23), CF_SOLID);
+    for (int i = 0; i < 2; i++) {
+        int pi = prop_add(SPR_P_TIRE, (4 + i * 6) * TILE + 8, 29 * TILE + 8, 0);
+        if (pi >= 0) W.props[pi].angle = rng_rangef(&R, 0, 6.28f);
+    }
+    /* the fire in the yard, where people sit in the evening */
+    obj_at(22, 27, OB_CAMPFIRE, 0);
+    hub_prop(SPR_P_BENCH, 20, 24, rect(20, 24, 21, 24), CF_SOLID);
+    hub_prop(SPR_P_BENCH, 20, 30, rect(20, 30, 21, 30), CF_SOLID);
+    /* Gus's workshop */
+    hub_prop(SPR_P_WORKBENCH, 50, 22, rect(50, 22, 51, 22), CF_SOLID | CF_SHOT);
+    HUB.workbench = v2(51 * TILE, 23 * TILE + 6);
+    obj_at(52, 22, OB_PEGBOARD, 0);
+    obj_at(53, 22, OB_PEGBOARD, 1);
+    toolbox = hub_obj_cont(55, 22, OB_CRATE, 0, "Toolbox");
+    {
+        int pi = hub_prop(SPR_P_SCRAP, 53, 27, rect(53, 27, 54, 28), CF_SOLID | CF_SHOT);
+        scrap = cont_new(53, 27, Z_HUB, "Scrap pile");
+        if (scrap >= 0) { W.conts[scrap].prop = pi; W.conts[scrap].pos = v2(54 * TILE, 28 * TILE + 4); }
+    }
+    obj_at(49, 29, OB_BOX, 1);
+    /* the range: bottles on two planks, boards that pop up between them, the hedge for a backstop */
+    HUB.range_line = v2(46 * TILE + 8, 36 * TILE + 8);
+    HUB.range = (SDL_FRect){50 * TILE, 31 * TILE + 8, 7 * TILE, 10 * TILE};
+    prop_add(SPR_P_BENCH, 53 * TILE, 33 * TILE + 2, 0);
+    prop_add(SPR_P_BENCH, 53 * TILE, 39 * TILE + 2, 0);
+    HUB.planks[0] = v2(54 * TILE - 1, 33 * TILE + 4);
+    HUB.planks[1] = v2(54 * TILE - 1, 39 * TILE + 4);
+    for (int i = 0; i < HUB_TARGETS; i++) {
+        HUB.target_prop[i] = prop_add(SPR_P_TARGET, 0, 0, 0);
+        if (HUB.target_prop[i] >= 0) W.props[HUB.target_prop[i]].tint = rgba(255, 255, 255, 0);
+    }
+    /* the old car nobody can fix (Gus keeps trying) */
+    {
+        int pi = hub_prop(SPR_P_CAR_BURNT, 12, 34, rect(12, 34, 13, 36), CF_SOLID | CF_SHOT);
+        car = cont_new(12, 35, Z_HUB, "Old car");
+        if (car >= 0) { W.conts[car].prop = pi; W.conts[car].pos = v2(12 * TILE + 16, 35 * TILE + 8); }
+    }
+    /* lamps, trees, bushes */
+    static const int lamps[][2] = {{28, 22}, {31, 33}, {12, 24}, {45, 32}, {36, 24}, {15, 31}};
+    for (int i = 0; i < ARRAY_LEN(lamps); i++) obj_at(lamps[i][0], lamps[i][1], OB_LAMPPOST, 0);
+    static const int trees[][2] = {{5, 6}, {8, 16}, {52, 8}, {55, 14}, {3, 41}, {19, 40}, {40, 39}, {50, 18}};
+    for (int i = 0; i < ARRAY_LEN(trees); i++) tree_at(trees[i][0], trees[i][1]);
+    static const int bushes[][2] = {{1, 9}, {1, 27}, {58, 5}, {58, 12}, {10, 1}, {44, 1}, {24, 42}, {36, 42}, {10, 42}};
+    for (int i = 0; i < ARRAY_LEN(bushes); i++) if (free_cell(bushes[i][0], bushes[i][1])) obj_at(bushes[i][0], bushes[i][1], OB_BUSH, i % 3);
+    /* the running course: round the greenhouse, flag to flag */
+    static const int course[][2] = {{16, 23}, {3, 15}, {4, 2}, {30, 1}, {56, 2}, {57, 19}, {40, 23}};
+    HUB.nflags = ARRAY_LEN(course);
+    for (int i = 0; i < HUB.nflags; i++) {
+        HUB.flags[i] = tile_center(course[i][0], course[i][1]);
+        HUB.flag_prop[i] = prop_add(SPR_P_FLAG, HUB.flags[i].x, HUB.flags[i].y + 6, 0);
+    }
+    /* the van, at the gate */
+    int vx = 30, vy = 37;
+    int van = hub_prop(SPR_P_VAN, vx, vy, rect(vx, vy, vx + 1, vy + 2), CF_SOLID | CF_SHOT);
+    if (van >= 0) { W.props[van].x -= 2; W.props[van].y -= 4; }
+    W.van = v2(vx * TILE + 16, vy * TILE + 24);
+    W.exit_rect = (SDL_FRect){(vx - 3) * TILE, vy * TILE, 3 * TILE, 3 * TILE};
+    for (int y = vy; y <= vy + 2; y++)
+        for (int x = vx - 3; x <= vx - 1; x++) cell(x, y)->flags |= CF_EXIT;
+    W.spawn = v2(30 * TILE, 21 * TILE + 8);
+    /* where everybody hangs about */
+    HUB.post[AR_ROSA] = v2(28 * TILE, 6 * TILE + 8);
+    HUB.post[AR_THEO] = HUB.theo_sick ? v2(37 * TILE + 3 * 28 + 12, 16 * TILE + 12) : v2(20 * TILE, 12 * TILE);
+    HUB.post[AR_GUS] = v2(51 * TILE + 8, 25 * TILE + 8);
+    HUB.post[AR_JUNE] = v2(44 * TILE, 35 * TILE + 8);
+    HUB.post[AR_DEE] = v2(8 * TILE + 8, 28 * TILE);
+    HUB.post[AR_MARTA] = v2(18 * TILE + 8, 11 * TILE + 8);
+    HUB.post[AR_FOLK_A] = v2(23 * TILE + 8, 25 * TILE + 8);
+    HUB.post[AR_FOLK_B] = v2(33 * TILE, 10 * TILE);
+    HUB.post[AR_FOLK_C] = v2(40 * TILE + 8, 11 * TILE + 8);
+    /* the crew keep watch round the yard, most of them by the gate; the ones coming along wait at the van */
+    HUB.post[AR_HOLLIS] = v2(24 * TILE + 8, 41 * TILE + 8);
+    HUB.post[AR_BEX] = v2(36 * TILE + 8, 41 * TILE);
+    HUB.post[AR_OZZIE] = v2(25 * TILE + 8, 35 * TILE + 8);
+    HUB.post[AR_CARMEN] = v2(15 * TILE + 8, 41 * TILE);
+    HUB.post[AR_WES] = v2(14 * TILE, 21 * TILE + 8);
+    for (int k = 0; k < MAX_CREW; k++) HUB.crew_van[k] = v2((33 + (k & 1)) * TILE + 8, (36 + k) * TILE + 8);
+    /* and the ones who didn't come back lie in the quiet corner behind the glass, a board and a candle each */
+    for (int k = 0; k < MAX_CREW; k++) {
+        HUB.grave[k] = v2((5 + (k % 3) * 2) * TILE + 8, (k < 3 ? 11 : 13) * TILE + 8);
+        if (RUN.crew[k] != CR_DEAD) continue;
+        prop_add(SPR_P_GRAVE, HUB.grave[k].x - 8, HUB.grave[k].y - 12, 0);
+    }
+    /* tonight's odds and ends (seeded per evening, so leaving and coming back doesn't restock them) */
+    Rng loot;
+    rng_seed(&loot, seed ^ ((uint64_t)(RUN.level + 1) * 0xBB67AE8584CAA73Bull));
+    int conts[] = {pantry, junk, toolbox, scrap, car};
+    for (int k = 0; k < ARRAY_LEN(conts); k++) hub_cont(k, conts[k], &loot);
+    vines();
+    compute_reach();
+    actor_spawn(AR_PLAYER, W.spawn);
     map_compute_autotile();
 }

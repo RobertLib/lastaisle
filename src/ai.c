@@ -3,7 +3,7 @@
 #include "gfx.h"
 #include "audio.h"
 
-static float diff_reaction(void) {
+float diff_reaction(void) {
     float k = 1.25f - 0.07f * W.level;
     if (RUN.mode == MODE_STORY) k += 0.12f;
     return MAXF(0.7f, k);
@@ -16,7 +16,7 @@ static bool has_grudge(Actor *a, int who) {
 }
 
 static void add_grudge(Actor *a, int who) {
-    if (who < 0 || has_grudge(a, who)) return;
+    if (who < 0 || &W.actors[who] == a || has_grudge(a, who)) return;
     for (int k = 0; k < 4; k++)
         if (a->br.grudge[k] < 0) { a->br.grudge[k] = who; return; }
     a->br.grudge[3] = who;
@@ -27,6 +27,19 @@ bool actor_hostile(int ai, int bi) {
     Actor *a = &W.actors[ai], *b = &W.actors[bi];
     if (!b->used || !b->alive) return false;
     if (has_grudge(a, bi)) return true;
+    /* animals: a rabid one goes for anybody and anybody goes for it; the rest are left alone (and leave you alone) */
+    if (is_animal(a) || is_animal(b)) {
+        if (is_animal(a) && is_animal(b)) return false;
+        if (is_plant(a) || is_plant(b)) return false;   /* the strays give the weeds a wide berth */
+        if (ai == 0) return b->rabid || has_grudge(b, 0);
+        return is_animal(a) ? a->rabid : b->rabid;
+    }
+    /* plants: they go for anybody who comes too close (plant.c decides how close); you cut them down, the locals
+     * just step round them (see ai_on_hurt) */
+    if (is_plant(a) || is_plant(b)) {
+        if (is_plant(a)) return !is_plant(b);
+        return ai == 0;
+    }
     if (ai == 0) return faction_hostile(FAC_PLAYER, b->faction) || has_grudge(b, 0);
     if (a->temper == TEMP_TIMID || a->faction == FAC_SCAV) return false;
     return faction_hostile(a->faction, b->faction);
@@ -39,15 +52,18 @@ static void set_state(Actor *a, AiState s, float timer) {
     a->br.repath = 0;
 }
 
+/* a thief minds nothing but the van, and then nothing but getting away with it */
+static bool on_the_job(const Actor *a) { return a->br.state == AI_STEAL || a->br.state == AI_GETAWAY; }
+
 static void alert_icon(Actor *a, int icon, float t) {
     a->alert_icon = icon;
     a->alert_icon_t = t;
 }
 
 /* ------------------------------------------------------------ movement */
-static bool path_to(Actor *a, V2 goal) {
+bool path_to(Actor *a, V2 goal) {
     int len = 0;
-    bool ok = path_find(a->pos, goal, a->br.path, 48, &len);
+    bool ok = path_find_r(a->pos, goal, a->radius, a->br.path, 48, &len);
     a->br.path_len = len;
     a->br.path_i = 0;
     /* a goal inside a shelf/wall can never be reached: aim for the last walkable node instead */
@@ -58,7 +74,7 @@ static bool path_to(Actor *a, V2 goal) {
 }
 
 /* steer along path; returns true when arrived */
-static bool follow(Actor *a, float speed, float dt) {
+bool follow(Actor *a, float speed, float dt) {
     Brain *b = &a->br;
     V2 target;
     if (b->path_i < b->path_len) {
@@ -89,7 +105,20 @@ static bool follow(Actor *a, float speed, float dt) {
     return false;
 }
 
-static void face_towards(Actor *a, float ang, float rate, float dt) { a->face = lerp_angle(a->face, ang, smooth_k(rate, dt)); }
+/* straight walk from a to b is free of solid tiles (counters, glass and crates don't block sight) */
+bool walk_clear(V2 a, V2 b, float r) {
+    V2 d = v2_sub(b, a);
+    float len = v2_len(d);
+    if (len < 1) return true;
+    V2 n = v2_scale(d, 1.0f / len), side = v2(-n.y * r, n.x * r);
+    for (float t = 0; t < len; t += 6) {
+        V2 p = v2_add(a, v2_scale(n, t));
+        if (solid_at(p.x, p.y) || solid_at(p.x + side.x, p.y + side.y) || solid_at(p.x - side.x, p.y - side.y)) return false;
+    }
+    return true;
+}
+
+void face_towards(Actor *a, float ang, float rate, float dt) { a->face = lerp_angle(a->face, ang, smooth_k(rate, dt)); }
 
 static void face_move(Actor *a, float dt) {
     if (v2_len(a->vel) > 8) face_towards(a, v2_to_angle(a->vel), 8, dt);
@@ -126,6 +155,7 @@ static int find_threat(Actor *a, int idx, float *out_d) {
         if (!actor_hostile(idx, j)) continue;
         float d = v2_dist(t->pos, a->pos);
         if (d > 330 || d > bd) continue;
+        if (is_animal(t) && d > 140) continue;   /* a rabid stray is only worth the trouble up close */
         if (!can_see(a, j)) continue;
         best = j;
         bd = d;
@@ -140,11 +170,12 @@ static int find_scary(Actor *a, int idx) {
         if (j == idx) continue;
         Actor *t = &W.actors[j];
         if (!t->used || !t->alive || t->down_t > 0) continue;
-        bool scary = (j == 0 && (t->weapon.id || has_grudge(a, 0))) || faction_hostile(t->faction, a->faction) || has_grudge(a, j);
+        bool scary = (j == 0 && (t->weapon.id || has_grudge(a, 0))) || faction_hostile(t->faction, a->faction) || has_grudge(a, j) ||
+                     (is_animal(t) && t->rabid) || (is_plant(t) && !plant_rooted(t) && t->br.state == AI_CHASE);
         if (j == 0 && !t->weapon.id && !has_grudge(a, 0)) scary = false;
         if (!scary) continue;
         float d = v2_dist(t->pos, a->pos);
-        float lim = j == 0 ? 85 : 150;
+        float lim = j == 0 ? 85 : (is_animal(t) || is_plant(t) ? 110 : 150);
         if (d < lim && can_see(a, j)) return j;
     }
     return -1;
@@ -164,7 +195,7 @@ static void become_hostile(Actor *a, int idx, int target, bool icon) {
     }
 }
 
-static V2 flee_point(Actor *a, V2 from) {
+V2 flee_point(Actor *a, V2 from) {
     V2 best = a->pos;
     float bs = -1;
     for (int i = 0; i < 12; i++) {
@@ -179,14 +210,39 @@ static V2 flee_point(Actor *a, V2 from) {
     return best;
 }
 
+/* the King gets off his throne */
+static void boss_wake(Actor *a) {
+    set_state(a, AI_CHASE, 0);
+    a->br.target = 0;
+    world_message("THE MALL KING", COL_YELLOW);
+    audio_music(MUS_BOSS);
+    alert_icon(a, 1, 1.5f);
+    play_at(SFX_ALERT, a->pos, 1, 0.5f);
+}
+
 void ai_on_hurt(Actor *a, int idx, int attacker) {
     if (attacker < 0 || attacker == idx) return;
     if (attacker < W.nactors && !W.actors[attacker].alive) return;
+    if (is_animal(a)) { add_grudge(a, attacker); animal_on_hurt(a, idx, attacker); return; }
+    if (is_plant(a)) { plant_on_hurt(a, idx, attacker); return; }
+    if (is_crew(a)) { crew_on_hurt(a, idx, attacker); return; }
+    if (a->br.state == AI_GETAWAY) { add_grudge(a, attacker); return; }   /* hit or not, they keep running with it */
+    if (is_plant(&W.actors[attacker])) {
+        /* nobody picks a fight with a weed: out of its reach, and carry on (lure them through the beds) */
+        Brain *b = &a->br;
+        if (a->arch == AR_BOSS || b->state == AI_CHASE || b->state == AI_FLEE || b->state == AI_SURRENDER) return;
+        set_state(a, AI_WANDER, 1.0f);
+        path_to(a, flee_point(a, W.actors[attacker].pos));
+        return;
+    }
     /* friendly fire between gang members is shrugged off */
     if (attacker != 0 && W.actors[attacker].faction == a->faction && a->faction != FAC_SCAV) return;
     add_grudge(a, attacker);
     a->br.aware = true;
-    if (a->arch == AR_BOSS) { a->br.target = attacker; if (a->br.state == AI_GUARD) set_state(a, AI_CHASE, 0); return; }
+    if (a->arch == AR_BOSS) {
+        if (a->br.state == AI_GUARD && !is_animal(&W.actors[attacker]) && !is_plant(&W.actors[attacker])) boss_wake(a);
+        return;
+    }
     if (a->temper == TEMP_TIMID && !(a->temper == TEMP_DEFENSIVE)) {
         a->br.target = attacker;
         set_state(a, AI_FLEE, frange(3, 5));
@@ -198,8 +254,9 @@ void ai_on_hurt(Actor *a, int idx, int attacker) {
     }
     /* friends nearby join in (or scatter) */
     for (int j = 1; j < W.nactors; j++) {
-        if (j == idx) continue;
+        if (j == idx || j == attacker) continue;   /* a scav who hit a friend doesn't turn on himself */
         Actor *f = &W.actors[j];
+        if (on_the_job(f)) continue;
         if (!f->used || !f->alive || f->faction != a->faction || f->down_t > 0) continue;
         if (v2_dist(f->pos, a->pos) > 150 || !los_clear(f->pos, a->pos, false)) continue;
         add_grudge(f, attacker);
@@ -223,7 +280,11 @@ void ai_on_noise(V2 pos, float radius, int source) {
         if (d > radius) continue;
         /* walls muffle */
         if (!los_clear(a->pos, pos, false) && d > radius * 0.6f) continue;
+        if (is_animal(a)) { animal_on_noise(a, j, pos, radius, source); continue; }
+        if (is_plant(a)) { plant_on_noise(a, j, pos, radius, source); continue; }
+        if (is_crew(a)) continue;   /* they keep their eyes on you, not on every bang down the aisles */
         if (a->br.state == AI_CHASE || a->br.state == AI_SURRENDER) continue;
+        if (on_the_job(a)) continue;   /* busy - and a racket elsewhere is just what a thief wants */
         bool hostile_src = source >= 0 && source < W.nactors && actor_hostile(j, source);
         if (a->arch == AR_BOSS) {
             if (a->br.state == AI_GUARD && hostile_src && d < 260) a->face = v2_to_angle(v2_sub(pos, a->pos));
@@ -257,15 +318,16 @@ static int nearest_weapon_pickup(V2 pos, float r) {
         Pickup *p = &W.pickups[i];
         if (!p->alive || p->flying || p->fuse > 0 || ITEMS[p->st.id].cat != CAT_WEAPON) continue;
         const WeaponDef *w = item_weapon(p->st.id);
-        if (w->kind == WK_GUN && p->st.cond <= 0) continue;
+        if ((w->kind == WK_GUN || w->kind == WK_CHAINSAW || w->kind == WK_FLAME) && p->st.cond <= 0) continue;
         float d = v2_dist2(p->pos, pos);
         if (d < bd) { bd = d; best = i; }
     }
     return best;
 }
 
-static void npc_attack(Actor *a, int idx, Actor *t, float dist, bool visible, float dt) {
+void npc_attack(Actor *a, int idx, Actor *t, float dist, bool visible, float dt) {
     const WeaponDef *w = item_weapon(a->weapon.id);
+    float slow = is_crew(a) ? 0.85f : diff_reaction();   /* the crew don't get slower in story mode */
     float aim_ang = v2_to_angle(v2_sub(t->pos, a->pos));
     if (w->kind == WK_GUN) {
         /* lead the target a little */
@@ -297,7 +359,7 @@ static void npc_attack(Actor *a, int idx, Actor *t, float dist, bool visible, fl
         }
         if (a->reload_t > 0) return;
         float need_aim = a->weapon.id == IT_RIFLE ? 0.9f : 0.35f;
-        need_aim *= diff_reaction();
+        need_aim *= slow;
         a->br.aim_t += dt;
         if (a->br.aim_t < need_aim) return;
         if (a->atk_cd > 0 || a->br.burst_t > 0) return;
@@ -311,7 +373,7 @@ static void npc_attack(Actor *a, int idx, Actor *t, float dist, bool visible, fl
         int burst = w->mag <= 2 || w->pellets > 1 ? 1 : (a->weapon.id == IT_RIFLE ? 1 : irange(2, 3));
         if (a->br.burst_n >= burst) {
             a->br.burst_n = 0;
-            a->br.burst_t = frange(0.7f, 1.3f) * diff_reaction();
+            a->br.burst_t = frange(0.7f, 1.3f) * slow;
             if (a->weapon.id == IT_RIFLE) a->br.aim_t = 0;
         }
         return;
@@ -322,6 +384,14 @@ static void npc_attack(Actor *a, int idx, Actor *t, float dist, bool visible, fl
             a->br.aim_t = 0;
         }
         a->br.aim_t += dt;
+        return;
+    }
+    /* out of fuel: chuck it at them and fight with whatever's left */
+    if ((w->kind == WK_CHAINSAW || w->kind == WK_FLAME) && a->weapon.cond <= 0) {
+        Stack s = a->weapon;
+        a->weapon.id = IT_NONE;
+        a->windup = 0;
+        throw_item(a, idx, s, aim_ang, 380);
         return;
     }
     /* melee / chainsaw */
@@ -341,7 +411,7 @@ static void npc_attack(Actor *a, int idx, Actor *t, float dist, bool visible, fl
         return;
     }
     if (dist < reach && a->atk_cd <= 0 && a->atk_t < 0) {
-        a->windup = MAXF(0.08f, w->windup * diff_reaction());
+        a->windup = MAXF(0.08f, w->windup * slow);
         if (a->arch == AR_FERAL) a->windup *= 0.6f;
     }
 }
@@ -404,7 +474,8 @@ static void chase(Actor *a, int idx, float dt) {
         V2 dir = v2_norm(v2_sub(a->pos, t->pos));
         b->strafe_t -= dt;
         if (b->strafe_t <= 0) { b->strafe_t = frange(0.8f, 1.8f); b->strafe_dir = -b->strafe_dir; }
-        V2 side = v2_scale(v2(-dir.y, dir.x), b->strafe_dir);
+        /* only the sign: guards park a look angle in strafe_dir */
+        V2 side = v2_scale(v2(-dir.y, dir.x), b->strafe_dir < 0 ? -1.0f : 1.0f);
         V2 mv;
         if (dist < want * 0.7f) mv = v2_add(dir, v2_scale(side, 0.5f));
         else if (dist > want * 1.3f) mv = v2_add(v2_scale(dir, -1), v2_scale(side, 0.3f));
@@ -418,11 +489,13 @@ static void chase(Actor *a, int idx, float dt) {
     }
     /* melee: close in */
     float reach = w->range + t->radius;
+    if (w->kind == WK_GUN) reach = 130;   /* empty gun, no ammo: get close enough to throw it */
     if (visible && dist < reach + 2) {
         a->vel = v2_scale(a->vel, 0.6f);
     } else {
         b->repath -= dt;
-        bool direct = visible && dist < 120;
+        /* straight at them only if nothing solid is in the way - counters and glass don't block sight */
+        bool direct = visible && dist < 120 && walk_clear(a->pos, goal, a->radius * 0.8f);
         if (direct) {
             V2 d = v2_norm(v2_sub(goal, a->pos));
             a->vel = v2_add(a->vel, v2_scale(v2_sub(v2_scale(d, speed), a->vel), smooth_k(10, dt)));
@@ -450,7 +523,7 @@ static void boss_update(Actor *a, int idx, float dt) {
     int phase = hpk > 0.6f ? 0 : (hpk > 0.28f ? 1 : 2);
     if (phase != a->boss_phase) {
         a->boss_phase = phase;
-        world_message(phase == 1 ? "THE KING IS ANGRY" : "LONG LIVE THE KING", COL_PINK);
+        world_message(phase == 1 ? "THE KING IS ANGRY" : "LONG LIVE THE KING", COL_TAG);
         add_shake(8);
         play_at(SFX_ALERT, a->pos, 1, 0.6f);
         if (phase == 2) {
@@ -473,14 +546,7 @@ static void boss_update(Actor *a, int idx, float dt) {
     if (b->state == AI_GUARD) {
         face_towards(a, PI_F * 0.5f, 3, dt);
         float d = v2_dist(a->pos, p->pos);
-        if (p->alive && d < 230 && los_clear(a->pos, p->pos, false)) {
-            set_state(a, AI_CHASE, 0);
-            b->target = 0;
-            world_message("THE MALL KING", COL_YELLOW);
-            audio_music(MUS_BOSS);
-            alert_icon(a, 1, 1.5f);
-            play_at(SFX_ALERT, a->pos, 1, 0.5f);
-        }
+        if (p->alive && d < 230 && los_clear(a->pos, p->pos, false)) boss_wake(a);
         return;
     }
     if (!p->alive) { a->vel = v2_scale(a->vel, 0.8f); return; }
@@ -525,8 +591,22 @@ static void boss_update(Actor *a, int idx, float dt) {
         return;
     }
     if (a->stun_t > 0) { a->vel = v2(0, 0); return; }
-    face_towards(a, ang, 6, dt);
     const WeaponDef *w = item_weapon(a->weapon.id);
+    /* no straight run at the player: walk round whatever is in the way (with a gun, only when he can't see you -
+       otherwise he keeps his distance and shoots over the planters) */
+    bool direct = vis && walk_clear(a->pos, p->pos, a->radius * 0.8f);
+    bool hunt = w->kind == WK_GUN ? !vis : !direct;
+    b->repath -= dt;
+    if (hunt) {
+        if (b->repath <= 0) {
+            /* nowhere he fits through: wait where he is */
+            if (!path_to(a, p->pos)) { b->path_len = 0; b->goal = a->pos; }
+            b->repath = 0.5f;
+        }
+        follow(a, ARCH[AR_BOSS].run, dt);
+        if (!vis) { face_move(a, dt); return; }
+    }
+    face_towards(a, ang, 6, dt);
     if (a->boss_t <= 0 && vis) {
         int move = irange(0, phase >= 1 ? 2 : 1);
         if (move == 0 && dist > 60) {
@@ -538,7 +618,7 @@ static void boss_update(Actor *a, int idx, float dt) {
             play_at(SFX_ALERT, a->pos, 1, 0.5f);
             return;
         }
-        if (move == 2 || (phase >= 1 && dist > 90)) {
+        if ((move == 2 && dist > 70) || (phase >= 1 && dist > 90)) {   /* never at point blank: he'd burn too */
             Stack mol = {IT_MOLOTOV, 1, 0};
             throw_item(a, idx, mol, ang + frange(-0.15f, 0.15f), MINF(420, dist * 1.6f + 80));
             a->boss_t = frange(2.0f, 3.0f);
@@ -548,26 +628,97 @@ static void boss_update(Actor *a, int idx, float dt) {
     }
     if (w->kind == WK_GUN) {
         if (a->weapon.cond <= 0 && a->reload_t <= 0) { a->weapon.cond = (int16_t)w->mag; a->reload_t = 1.4f; play_at(SFX_RELOAD, a->pos, 0.8f, 0.8f); }
-        float want = 110;
-        V2 dir = v2_norm(v2_sub(a->pos, p->pos));
-        V2 mv = dist < want ? dir : (dist > want * 1.5f ? v2_scale(dir, -1) : v2(-dir.y, dir.x));
-        a->vel = v2_add(a->vel, v2_scale(v2_sub(v2_scale(mv, ARCH[AR_BOSS].walk), a->vel), smooth_k(6, dt)));
+        if (vis) {
+            float want = 110;
+            V2 dir = v2_norm(v2_sub(a->pos, p->pos));
+            V2 mv = dist < want ? dir : (dist > want * 1.5f ? v2_scale(dir, -1) : v2(-dir.y, dir.x));
+            a->vel = v2_add(a->vel, v2_scale(v2_sub(v2_scale(mv, ARCH[AR_BOSS].walk), a->vel), smooth_k(6, dt)));
+        }
         if (vis && a->reload_t <= 0 && a->atk_cd <= 0 && b->burst_t <= 0 && fabsf(angle_diff(a->face, ang)) < 0.3f) {
             attack_begin(a, idx);
             if (++b->burst_n >= 2 + phase) { b->burst_n = 0; b->burst_t = frange(1.0f, 1.6f); }
         }
     } else {
         /* chainsaw rampage */
-        V2 d = v2_norm(v2_sub(p->pos, a->pos));
-        a->vel = v2_add(a->vel, v2_scale(v2_sub(v2_scale(d, ARCH[AR_BOSS].run), a->vel), smooth_k(6, dt)));
+        if (direct) {
+            V2 d = v2_norm(v2_sub(p->pos, a->pos));
+            a->vel = v2_add(a->vel, v2_scale(v2_sub(v2_scale(d, ARCH[AR_BOSS].run), a->vel), smooth_k(6, dt)));
+        }
         if (dist < 30 && a->atk_cd <= 0) attack_begin(a, idx);
         a->weapon.cond = 100;
     }
 }
 
+/* ---------------------------------------------------------------- thief */
+/* sent by van_thieves (world.c) once the van's been left alone a while: walk in, rummage, grab the lot, run */
+static void steal(Actor *a, int idx, float dt) {
+    Brain *b = &a->br;
+    Actor *p = player();
+    float walk = ARCH[a->arch].walk * a->speed_mul, run = ARCH[a->arch].run * a->speed_mul;
+    /* caught at it, or nothing left to take: forget it */
+    if (p->alive && v2_dist(p->pos, a->pos) < 110 && los_clear(p->pos, a->pos, false)) {
+        b->target = -1;
+        set_state(a, AI_FLEE, frange(3, 5));
+        path_to(a, flee_point(a, p->pos));
+        alert_icon(a, 1, 0.8f);
+        return;
+    }
+    if (!van_haul()) { set_state(a, AI_WANDER, 0); return; }
+    V2 at = van_spot();
+    if (v2_dist(a->pos, at) > 14) {
+        b->wander_t += dt;
+        b->repath -= dt;
+        if (b->repath <= 0) { path_to(a, at); b->repath = 2.0f; }
+        follow(a, (walk + run) * 0.5f, dt);
+        face_move(a, dt);
+        b->timer = 0;
+        if (b->wander_t > 45) set_state(a, AI_WANDER, 0);   /* can't get there */
+        return;
+    }
+    a->vel = v2_scale(a->vel, 0.6f);
+    face_towards(a, v2_to_angle(v2_sub(W.van, a->pos)), 8, dt);
+    if (b->timer == 0) play_at(SFX_VAN_DOOR, a->pos, 0.8f, 1.15f);
+    b->timer += dt;
+    if (fmodf(b->timer, 0.6f) < dt) play_at(SFX_LOOT_RUMMAGE, a->pos, 0.6f, frange(0.9f, 1.2f));
+    if (b->timer > 2.5f) {
+        van_rob(a, idx);
+        b->target = -1;
+        set_state(a, AI_GETAWAY, 0);
+        path_to(a, flee_point(a, W.van));
+        b->timer = 4;
+    }
+}
+
+/* with your shopping: on the move round the level till somebody takes them down - flat out away from you when you're
+   close, a jog from one end of the place to the other when you're not. Weighed down with it, so you can run them down */
+static void getaway(Actor *a, int idx, float dt) {
+    Brain *b = &a->br;
+    Actor *p = player();
+    float walk = ARCH[a->arch].walk * a->speed_mul, run = ARCH[a->arch].run * a->speed_mul;
+    bool chased = p->alive && v2_dist(p->pos, a->pos) < 180 && los_clear(p->pos, a->pos, false);
+    b->timer -= dt;
+    b->repath -= dt;
+    if (chased) {
+        if (!b->aware) { alert_icon(a, 1, 0.8f); b->aware = true; }
+        if (b->repath <= 0 || b->path_i >= b->path_len) { path_to(a, flee_point(a, p->pos)); b->repath = 0.6f; }
+        follow(a, run * 0.8f, dt);
+    } else {
+        b->aware = false;
+        if (b->timer <= 0 || b->path_i >= b->path_len) {
+            V2 g = random_floor_spot(&g_rng, chance(0.5f), 220, a->pos);
+            b->timer = path_to(a, g) ? 14 : 0.5f;
+        }
+        follow(a, (walk + run) * 0.5f, dt);
+    }
+    face_move(a, dt);
+}
+
+
 /* -------------------------------------------------------------- update */
 void ai_update(Actor *a, int idx, float dt) {
     if (!a->alive || a->down_t > 0) return;
+    if (is_animal(a)) { animal_update(a, idx, dt); return; }
+    if (is_plant(a)) { plant_update(a, idx, dt); return; }
     Brain *b = &a->br;
     attack_update(a, idx, dt);
     if (a->arch == AR_BOSS) { boss_update(a, idx, dt); return; }
@@ -587,6 +738,9 @@ void ai_update(Actor *a, int idx, float dt) {
         face_move(a, dt);
         return;
     }
+    if (is_crew(a)) { crew_update(a, idx, dt); return; }
+    if (b->state == AI_STEAL) { steal(a, idx, dt); return; }
+    if (b->state == AI_GETAWAY) { getaway(a, idx, dt); return; }
 
     /* perception */
     b->think -= dt;
@@ -672,9 +826,9 @@ void ai_update(Actor *a, int idx, float dt) {
                 /* go shopping */
                 int best = -1;
                 float bd = 1e9f;
-                for (int k = 0; k < 8; k++) {
+                for (int k = 0; k < 8 && W.nconts > 0; k++) {
                     int ci = irange(0, W.nconts - 1);
-                    if (ci < 0) break;
+                    if (ci == b->container) continue;   /* the last one: looted, or we couldn't get to it */
                     Container *c = &W.conts[ci];
                     if (c->dead || c->searched || c->n == 0) continue;
                     float d = v2_dist(c->pos, a->pos);
@@ -683,7 +837,8 @@ void ai_update(Actor *a, int idx, float dt) {
                 if (best >= 0) {
                     b->container = best;
                     set_state(a, AI_LOOT, 0);
-                    path_to(a, W.conts[best].pos);
+                    b->wander_t = 0;
+                    if (!path_to(a, W.conts[best].pos)) set_state(a, AI_WANDER, 0);
                     break;
                 }
                 V2 g = random_floor_spot(&g_rng, cell_flag(tile_of(a->pos.x), tile_of(a->pos.y), CF_INDOOR), 0, a->pos);
@@ -710,24 +865,38 @@ void ai_update(Actor *a, int idx, float dt) {
         break;
     }
     case AI_LOOT: {
-        if (b->container < 0) { set_state(a, AI_WANDER, 0); break; }
-        Container *c = &W.conts[b->container];
-        if (c->searched && c->n == 0) { set_state(a, AI_WANDER, 0); break; }
-        if (v2_dist(a->pos, c->pos) < 24) {
+        Container *c = b->container >= 0 ? &W.conts[b->container] : NULL;
+        if (!c || (c->searched && c->n == 0)) { b->wander_t = 0; set_state(a, AI_WANDER, 0); break; }
+        float cd = v2_dist(a->pos, c->pos);
+        /* cars, dumpsters and desks are big: their centre is further from where you can stand */
+        float reach = c->prop >= 0 ? 36 : 24;
+        if (cd < reach) {
             a->vel = v2_scale(a->vel, 0.6f);
             face_towards(a, v2_to_angle(v2_sub(c->pos, a->pos)), 8, dt);
             b->timer += dt;
             if (fmodf(b->timer, 0.6f) < dt) play_at(SFX_LOOT_RUMMAGE, a->pos, 0.6f, frange(0.9f, 1.2f));
             if (b->timer > 1.6f) {
                 search_container(a, b->container, false);
+                b->wander_t = 0;
                 set_state(a, AI_IDLE, frange(0.5f, 1.5f));
             }
         } else {
+            /* can't get there (no path, path ends far off, or taking forever): give up on it -
+               b->container stays set so it isn't picked again straight away */
+            b->wander_t += dt;
+            bool lost = b->wander_t > 15;
             b->repath -= dt;
-            if (b->repath <= 0 && b->path_len == 0) { path_to(a, c->pos); b->repath = 1.5f; }
-            if (follow(a, walk, dt) && v2_dist(a->pos, c->pos) > 30) set_state(a, AI_WANDER, 0);
+            if (b->repath <= 0 && b->path_len == 0) {
+                if (!path_to(a, c->pos)) lost = true;
+                b->repath = 1.5f;
+            }
+            if (follow(a, walk, dt)) {
+                if (cd > reach + 12) lost = true;
+                else a->vel = v2_scale(v2_norm(v2_sub(c->pos, a->pos)), walk);   /* shuffle the last bit */
+            }
             face_move(a, dt);
             b->timer = 0;
+            if (lost) { b->wander_t = 0; set_state(a, AI_WANDER, 0); }
         }
         break;
     }
@@ -774,6 +943,8 @@ void ai_update(Actor *a, int idx, float dt) {
             path_to(a, flee_point(a, player()->pos));
             alert_icon(a, 0, 0);
         }
+        break;
+    default:
         break;
     }
 }

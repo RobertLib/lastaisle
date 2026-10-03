@@ -1,6 +1,8 @@
 /* LAST AISLE - rendering */
 #include "gfx.h"
 
+#define GRAIN_N 97  /* odd size so the tiling never lines up with the 480x270 grid */
+
 Gfx G;
 
 static SDL_Texture *make_target(int w, int h) {
@@ -76,12 +78,36 @@ static SDL_Texture *make_vignette(void) {
     return surface_tex(s, SDL_SCALEMODE_LINEAR);
 }
 
-static SDL_Texture *make_scan(void) {
-    SDL_Surface *s = SDL_CreateSurface(1, 2, SDL_PIXELFORMAT_RGBA32);
+/* film grain: sparse warm-light and dark specks, one speck per internal pixel */
+static SDL_Texture *make_grain(void) {
+    const int N = GRAIN_N;
+    SDL_Surface *s = SDL_CreateSurface(N, N, SDL_PIXELFORMAT_RGBA32);
     Uint8 *px = (Uint8 *)s->pixels;
-    px[0] = px[1] = px[2] = 0; px[3] = 0;
-    Uint8 *p = px + s->pitch;
-    p[0] = p[1] = p[2] = 0; p[3] = 46;
+    Rng r;
+    rng_seed(&r, 0x6A41);
+    for (int y = 0; y < N; y++)
+        for (int x = 0; x < N; x++) {
+            Uint8 *p = px + y * s->pitch + x * 4;
+            float v = rng_float(&r);
+            if (v < 0.10f) { p[0] = 255; p[1] = 236; p[2] = 204; p[3] = (Uint8)rng_range(&r, 8, 20); }
+            else if (v < 0.32f) { p[0] = 20; p[1] = 12; p[2] = 6; p[3] = (Uint8)rng_range(&r, 10, 30); }
+            else { p[0] = p[1] = p[2] = 0; p[3] = 0; }
+        }
+    return surface_tex(s, SDL_SCALEMODE_NEAREST);
+}
+
+/* ordered dither: level L (0..16) keeps the pixels whose Bayer rank is below L */
+static const int BAYER4[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
+
+static SDL_Texture *make_dither(void) {
+    SDL_Surface *s = SDL_CreateSurface(17 * 4, 4, SDL_PIXELFORMAT_RGBA32);
+    Uint8 *px = (Uint8 *)s->pixels;
+    for (int y = 0; y < 4; y++)
+        for (int x = 0; x < 17 * 4; x++) {
+            Uint8 *p = px + y * s->pitch + x * 4;
+            p[0] = p[1] = p[2] = 255;
+            p[3] = BAYER4[y * 4 + x % 4] < x / 4 ? 255 : 0;
+        }
     return surface_tex(s, SDL_SCALEMODE_NEAREST);
 }
 
@@ -112,7 +138,7 @@ bool gfx_init(SDL_Window *win, SDL_Renderer *ren) {
     G.win = win;
     G.ren = ren;
     G.cam_zoom = 1.0f;
-    G.scanlines = true;
+    G.grain = true;
     SDL_Surface *s = load_atlas();
     if (!s) {
         SDL_Log("Cannot load assets/atlas.png: %s", SDL_GetError());
@@ -147,15 +173,26 @@ bool gfx_init(SDL_Window *win, SDL_Renderer *ren) {
     G.tex_glow = make_glow();
     G.tex_cone = make_cone();
     G.tex_vignette = make_vignette();
-    G.tex_scan = make_scan();
+    G.tex_grain = make_grain();
     G.tex_white = make_white();
+    G.tex_dither = make_dither();
+    for (int i = 0; i < 2; i++) {
+        G.rt_cut[i] = make_target(VIEW_W, VIEW_H);
+        if (!G.rt_cut[i]) return false;
+        SDL_SetTextureBlendMode(G.rt_cut[i], SDL_BLENDMODE_BLEND);
+    }
+    /* dst.alpha *= src.alpha, colour untouched: stencils a dither pattern into a shot */
+    G.bm_mask = SDL_ComposeCustomBlendMode(SDL_BLENDFACTOR_ZERO, SDL_BLENDFACTOR_ONE, SDL_BLENDOPERATION_ADD,
+                                           SDL_BLENDFACTOR_ZERO, SDL_BLENDFACTOR_SRC_ALPHA, SDL_BLENDOPERATION_ADD);
+    if (!G.tex_dither || !SDL_SetTextureBlendMode(G.tex_dither, G.bm_mask)) G.bm_mask = 0;
+    if (G.tex_dither) SDL_SetTextureBlendMode(G.tex_dither, SDL_BLENDMODE_BLEND);
     gfx_resize();
     return true;
 }
 
 void gfx_shutdown(void) {
-    SDL_Texture *ts[] = {G.atlas, G.rt_world, G.rt_light, G.rt_hud, G.tex_glow,
-                         G.tex_cone, G.tex_vignette, G.tex_scan, G.tex_white};
+    SDL_Texture *ts[] = {G.atlas, G.rt_world, G.rt_light, G.rt_hud, G.tex_glow, G.tex_cone, G.tex_vignette,
+                         G.tex_grain, G.tex_white, G.tex_dither, G.rt_cut[0], G.rt_cut[1]};
     for (int i = 0; i < ARRAY_LEN(ts); i++)
         if (ts[i]) SDL_DestroyTexture(ts[i]);
 }
@@ -232,6 +269,52 @@ void gfx_begin_hud(void) {
     G.off_x = G.off_y = 0;
 }
 
+void gfx_begin_cut(int i) {
+    SDL_SetRenderTarget(G.ren, G.rt_cut[i]);
+    SDL_SetRenderDrawColor(G.ren, 11, 10, 16, 255);
+    SDL_RenderClear(G.ren);
+    G.off_x = G.off_y = 0;
+}
+
+static void dither_cell(int level, SDL_FRect *src) {
+    *src = (SDL_FRect){(float)(CLAMP(level, 0, 16) * 4), 0, 4, 4};
+}
+
+void gfx_cut_mask(int i, float level, float wipe) {
+    if (level >= 1.0f && wipe <= 0) return;
+    SDL_SetRenderTarget(G.ren, G.rt_cut[i]);
+    if (!G.bm_mask) {
+        /* no custom blending on this renderer: a plain cross-fade */
+        SDL_SetTextureAlphaMod(G.rt_cut[i], (Uint8)(CLAMP(level, 0.0f, 1.0f) * 255));
+        return;
+    }
+    SDL_SetTextureAlphaMod(G.rt_cut[i], 255);
+    SDL_SetTextureBlendMode(G.tex_dither, G.bm_mask);
+    SDL_SetTextureColorMod(G.tex_dither, 255, 255, 255);
+    SDL_SetTextureAlphaMod(G.tex_dither, 255);
+    SDL_FRect src;
+    if (wipe <= 0) {
+        dither_cell((int)floorf(level * 16 + 0.5f), &src);
+        SDL_FRect dst = {0, 0, VIEW_W, VIEW_H};
+        SDL_RenderTextureTiled(G.ren, G.tex_dither, &src, 1.0f, &dst);
+    } else {
+        /* a soft edge `wipe` screens wide travels across: fully in on its left, untouched on its right */
+        for (int x = 0; x < VIEW_W; x += 4) {
+            float k = CLAMP((level * (1 + wipe) - (float)x / VIEW_W) / wipe, 0.0f, 1.0f);
+            dither_cell((int)floorf(k * 16 + 0.5f), &src);
+            SDL_FRect dst = {(float)x, 0, 4, VIEW_H};
+            SDL_RenderTextureTiled(G.ren, G.tex_dither, &src, 1.0f, &dst);
+        }
+    }
+    SDL_SetTextureBlendMode(G.tex_dither, SDL_BLENDMODE_BLEND);
+}
+
+void gfx_draw_cut(int i, float x, float y) {
+    SDL_FRect dst = {floorf(x + G.off_x), floorf(y + G.off_y), VIEW_W, VIEW_H};
+    SDL_RenderTexture(G.ren, G.rt_cut[i], NULL, &dst);
+    SDL_SetTextureAlphaMod(G.rt_cut[i], 255);
+}
+
 static void overlay_fill(Color c) {
     SDL_SetRenderDrawBlendMode(G.ren, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(G.ren, c.r, c.g, c.b, c.a);
@@ -256,22 +339,21 @@ void gfx_present(void) {
     SDL_SetTextureAlphaMod(G.rt_world, 255);
     SDL_SetTextureBlendMode(G.rt_world, SDL_BLENDMODE_BLEND);
     SDL_RenderTextureRotated(G.ren, G.rt_world, NULL, &dst, ang, &centre, SDL_FLIP_NONE);
-    if (G.chroma > 0.01f) {
-        float o = G.chroma * 2.5f * G.scale;
-        SDL_SetTextureBlendMode(G.rt_world, SDL_BLENDMODE_ADD);
-        Uint8 a = (Uint8)CLAMP(G.chroma * 140, 0, 255);
-        SDL_SetTextureAlphaMod(G.rt_world, a);
-        SDL_FRect d2 = dst;
-        d2.x += o;
-        SDL_SetTextureColorMod(G.rt_world, 255, 0, 40);
-        SDL_RenderTextureRotated(G.ren, G.rt_world, NULL, &d2, ang, &centre, SDL_FLIP_NONE);
-        d2.x = dst.x - o;
-        SDL_SetTextureColorMod(G.rt_world, 0, 60, 255);
-        SDL_RenderTextureRotated(G.ren, G.rt_world, NULL, &d2, ang, &centre, SDL_FLIP_NONE);
-        SDL_SetTextureColorMod(G.rt_world, 255, 255, 255);
+    if (G.impact > 0.01f) {
+        /* contrast punch: multiplying the frame by itself crushes the mids and burns the highlights */
+        SDL_SetTextureBlendMode(G.rt_world, SDL_BLENDMODE_MUL);
+        SDL_SetTextureAlphaMod(G.rt_world, (Uint8)CLAMP(G.impact * 190, 0, 255));
+        SDL_RenderTextureRotated(G.ren, G.rt_world, NULL, &dst, ang, &centre, SDL_FLIP_NONE);
         SDL_SetTextureAlphaMod(G.rt_world, 255);
         SDL_SetTextureBlendMode(G.rt_world, SDL_BLENDMODE_BLEND);
     }
+    /* sun-bleached grade: warm the frame and lift the blacks like an old print */
+    SDL_SetRenderDrawBlendMode(G.ren, SDL_BLENDMODE_MUL);
+    SDL_SetRenderDrawColor(G.ren, 255, 243, 222, 255);
+    SDL_RenderFillRect(G.ren, &G.view);
+    SDL_SetRenderDrawBlendMode(G.ren, SDL_BLENDMODE_ADD);
+    SDL_SetRenderDrawColor(G.ren, 16, 12, 7, 255);
+    SDL_RenderFillRect(G.ren, &G.view);
 
     /* vignette + damage pulses */
     float vig = CLAMP(0.55f + G.vignette, 0.0f, 1.0f);
@@ -293,9 +375,14 @@ void gfx_present(void) {
     /* HUD */
     SDL_RenderTexture(G.ren, G.rt_hud, NULL, &G.view);
 
-    if (G.scanlines) {
-        SDL_SetTextureBlendMode(G.tex_scan, SDL_BLENDMODE_BLEND);
-        SDL_RenderTextureTiled(G.ren, G.tex_scan, NULL, G.scale * 0.5f, &G.view);
+    if (G.grain) {
+        /* re-roll the grain at film rate, not every frame */
+        uint32_t f = (uint32_t)(G.time * 24.0f) * 2654435761u;
+        float tile = GRAIN_N * G.scale;
+        float ox = (float)((f >> 8) % GRAIN_N) * G.scale, oy = (float)((f >> 20) % GRAIN_N) * G.scale;
+        SDL_FRect d = {G.view.x - ox, G.view.y - oy, G.view.w + tile, G.view.h + tile};
+        SDL_SetTextureBlendMode(G.tex_grain, SDL_BLENDMODE_BLEND);
+        SDL_RenderTextureTiled(G.ren, G.tex_grain, NULL, G.scale, &d);
     }
     SDL_SetRenderClipRect(G.ren, NULL);
     if (G.capture_path) {
@@ -363,6 +450,15 @@ void gfx_spr_stretch(int id, float x, float y, float w, float h, Color c) {
     SDL_RenderTexture(G.ren, G.atlas, &src, &dst);
 }
 
+void gfx_spr_tile(int id, float x, float y, float w, float h, Color c) {
+    if (id < 0 || id >= SPR_COUNT || w <= 0 || h <= 0) return;
+    const AtlasSprite *a = &g_atlas[id];
+    SDL_FRect src = {a->x, a->y, a->w, a->h};
+    SDL_FRect dst = {floorf(x + G.off_x + 0.5f), floorf(y + G.off_y + 0.5f), floorf(w), floorf(h)};
+    tint(c);
+    SDL_RenderTextureTiled(G.ren, G.atlas, &src, 1.0f, &dst);
+}
+
 void gfx_nine(int id, float x, float y, float w, float h, Color c) {
     if (id < 0 || id >= SPR_COUNT) return;
     const AtlasSprite *a = &g_atlas[id];
@@ -421,6 +517,60 @@ void gfx_cone(float x, float y, float angle, float len, Color c, float intensity
     SDL_RenderTextureRotated(G.ren, G.tex_cone, NULL, &dst, angle * RAD2DEG, &centre, SDL_FLIP_NONE);
 }
 
+void gfx_dither(float x, float y, float w, float h, float level, Color c) {
+    int l = (int)floorf(CLAMP(level, 0.0f, 1.0f) * 16 + 0.5f);
+    if (l <= 0 || w <= 0 || h <= 0) return;
+    /* snap to the 4px grid so neighbouring fills share one pattern */
+    float x0 = floorf((x + G.off_x) / 4) * 4, y0 = floorf((y + G.off_y) / 4) * 4;
+    float x1 = ceilf((x + G.off_x + w) / 4) * 4, y1 = ceilf((y + G.off_y + h) / 4) * 4;
+    SDL_FRect src, dst = {x0, y0, x1 - x0, y1 - y0};
+    dither_cell(l, &src);
+    SDL_SetTextureBlendMode(G.tex_dither, SDL_BLENDMODE_BLEND);
+    SDL_SetTextureColorMod(G.tex_dither, c.r, c.g, c.b);
+    SDL_SetTextureAlphaMod(G.tex_dither, c.a);
+    SDL_RenderTextureTiled(G.ren, G.tex_dither, &src, 1.0f, &dst);
+}
+
+/* ------------------------------------------------------------ store ephemera */
+static Color shade(Color c, float k) {
+    return rgba((int)CLAMP(c.r * k, 0, 255), (int)CLAMP(c.g * k, 0, 255), (int)CLAMP(c.b * k, 0, 255), c.a);
+}
+
+void gfx_sticker(float x, float y, float w, float h, Color bg) {
+    x = floorf(x);
+    y = floorf(y);
+    Color ink = rgba(11, 10, 16, bg.a);
+    gfx_fill(x + 2, y + h, w - 2, 1, rgba(0, 0, 0, (Uint8)(bg.a * 0.45f)));
+    gfx_fill(x + w, y + 2, 1, h - 2, rgba(0, 0, 0, (Uint8)(bg.a * 0.45f)));
+    gfx_fill(x + 1, y, w - 2, h, ink);
+    gfx_fill(x, y + 1, w, h - 2, ink);
+    gfx_fill(x + 1, y + 1, w - 2, h - 2, bg);
+    gfx_fill(x + 2, y + 1, w - 4, 1, color_lerp(bg, rgba(255, 255, 255, bg.a), 0.35f));
+    gfx_fill(x + 1, y + h - 2, w - 2, 1, shade(bg, 0.78f));
+}
+
+void gfx_marker(float x, float y, float w, float h, Color c) {
+    x = floorf(x);
+    y = floorf(y);
+    gfx_fill(x, y, w, h, c);
+    /* felt-tip ends: each row of the stroke starts and stops a little differently */
+    for (int i = 0; i < (int)h; i++) {
+        int l = (i * 5 + 1) % 4, r = (i * 3 + 2) % 4;
+        gfx_fill(x - l, y + i, l, 1, c);
+        gfx_fill(x + w, y + i, r, 1, c);
+    }
+    gfx_fill(x, y + h - 1, w, 1, shade(c, 0.85f));
+}
+
+void gfx_ring(float cx, float cy, float r, float thick, Color c) {
+    int ir = (int)ceilf(r);
+    for (int y = -ir; y <= ir; y++)
+        for (int x = -ir; x <= ir; x++) {
+            float d = sqrtf((x + 0.5f) * (x + 0.5f) + (y + 0.5f) * (y + 0.5f));
+            if (d <= r && d > r - thick) gfx_fill(cx + x, cy + y, 1, 1, c);
+        }
+}
+
 /* --------------------------------------------------------------------- text */
 static int glyph_id(FontId f, int ch) {
     if (f == FONT_BIG) {
@@ -448,8 +598,8 @@ static Color code_color(char k, Color base) {
     switch (k) {
     case 'w': return rgba(251, 248, 242, base.a);
     case 'y': return rgba(255, 212, 71, base.a);
-    case 'p': return rgba(255, 95, 149, base.a);
-    case 'c': return rgba(98, 236, 208, base.a);
+    case 'p': return rgba(240, 74, 44, base.a);   /* price-tag red */
+    case 'c': return rgba(222, 184, 135, base.a); /* cardboard */
     case 'r': return rgba(232, 41, 63, base.a);
     case 'g': return rgba(162, 211, 76, base.a);
     case 'k': return rgba(138, 130, 148, base.a);
@@ -471,17 +621,6 @@ int gfx_text_w(FontId f, const char *s) {
     return best > 0 ? best - 1 : 0;
 }
 
-Color gfx_rainbow(float t) {
-    /* Hotline Miami-ish neon cycle: pink -> orange -> yellow -> cyan -> purple */
-    static const Color stops[] = {{255, 95, 149, 255}, {255, 140, 46, 255}, {255, 212, 71, 255},
-                                  {98, 236, 208, 255}, {167, 100, 234, 255}};
-    int n = ARRAY_LEN(stops);
-    t = t - floorf(t);
-    float f = t * n;
-    int i = (int)f;
-    return color_lerp(stops[i % n], stops[(i + 1) % n], f - i);
-}
-
 static int text_line(FontId f, const char *s, int len, float x, float y, Color c, Color start, int flags, int *idx, int limit) {
     float cx = x;
     Color cur = start;
@@ -500,13 +639,8 @@ static int text_line(FontId f, const char *s, int len, float x, float y, Color c
         if (ch != ' ') {
             int id = glyph_id(f, ch);
             float gx = cx, gy = y;
-            if (flags & TXT_WAVE) gy += sinf(G.time * 5.0f + *idx * 0.55f) * (f == FONT_BIG ? 1.6f : 1.0f);
             if (flags & TXT_SHAKE) { gx += (float)irange(-1, 1); gy += (float)irange(-1, 1); }
             Color col = cur;
-            if (flags & TXT_RAINBOW) {
-                col = gfx_rainbow(G.time * 0.35f + *idx * 0.04f);
-                col.a = c.a;
-            }
             if (flags & TXT_OUTLINE) {
                 for (int oy = -1; oy <= 1; oy++)
                     for (int ox = -1; ox <= 1; ox++)
@@ -612,6 +746,41 @@ int gfx_text_wrap_h(FontId f, const char *s, int maxw, int line_h) {
     return wrap_lines(f, s, maxw, line_h, 0, 0, NULL, NULL);
 }
 
+void gfx_text_reveal(FontId f, const char *s, float cx, float y, Color c, float shown, int line_h) {
+    const float soft = 6;   /* letters fade over this many letter-times */
+    int idx = 0;
+    const char *line = s;
+    while (*line) {
+        const char *e = strchr(line, '\n');
+        int len = e ? (int)(e - line) : (int)strlen(line);
+        char buf[256];
+        int n = MINF(len, 255);
+        memcpy(buf, line, n);
+        buf[n] = 0;
+        float x = floorf(cx - gfx_text_w(f, buf) / 2);
+        Color cur = c;
+        for (int i = 0; i < n; i++) {
+            unsigned char ch = (unsigned char)buf[i];
+            if (ch == '^' && i + 1 < n) {
+                i++;
+                cur = buf[i] == '0' ? c : code_color(buf[i], c);
+                continue;
+            }
+            float a = CLAMP((shown - idx) / soft + 1.0f, 0.0f, 1.0f);
+            idx++;
+            if (ch != ' ' && a > 0) {
+                Color k = cur;
+                k.a = (Uint8)(cur.a * a);
+                gfx_spr_c(glyph_id(f, ch), x, floorf(y), k);
+            }
+            x += glyph_adv(f, ch);
+        }
+        if (!e) break;
+        line = e + 1;
+        y += line_h;
+    }
+}
+
 int gfx_text_big(FontId f, const char *s, float x, float y, int scale, Color c, int flags) {
     int w = gfx_text_w(f, s) * scale;
     float cx = x;
@@ -619,17 +788,13 @@ int gfx_text_big(FontId f, const char *s, float x, float y, int scale, Color c, 
     else if (flags & TXT_RIGHT) cx = x - w;
     cx = floorf(cx);
     Color shadow = rgba(11, 10, 16, c.a);
-    int idx = 0;
     for (const char *p = s; *p; p++) {
         unsigned char ch = (unsigned char)*p;
         int adv = glyph_adv(f, ch) * scale;
         if (ch != ' ') {
             int id = glyph_id(f, ch);
             float gx = cx, gy = y;
-            if (flags & TXT_WAVE) gy += floorf(sinf(G.time * 4.0f + idx * 0.6f) * scale * 1.2f);
             if (flags & TXT_SHAKE) { gx += (float)irange(-scale, scale) * 0.5f; gy += (float)irange(-scale, scale) * 0.5f; }
-            Color col = c;
-            if (flags & TXT_RAINBOW) { col = gfx_rainbow(G.time * 0.35f + idx * 0.05f); col.a = c.a; }
             if (flags & TXT_SHADOW) {
                 gfx_spr_ex(id, gx + scale * 2, gy + scale * 2, 0, (float)scale, (float)scale, shadow);
                 gfx_spr_ex(id, gx + scale, gy + scale, 0, (float)scale, (float)scale, shadow);
@@ -639,10 +804,24 @@ int gfx_text_big(FontId f, const char *s, float x, float y, int scale, Color c, 
                     for (int ox = -1; ox <= 1; ox++)
                         if (ox || oy) gfx_spr_ex(id, gx + ox * scale, gy + oy * scale, 0, (float)scale, (float)scale, shadow);
             }
-            gfx_spr_ex(id, gx, gy, 0, (float)scale, (float)scale, col);
+            gfx_spr_ex(id, gx, gy, 0, (float)scale, (float)scale, c);
         }
-        idx++;
         cx += adv;
     }
     return w;
+}
+
+void gfx_text_rot(FontId f, const char *s, float cx, float cy, int scale, float angle, Color c) {
+    float w = gfx_text_w(f, s) * scale, h = gfx_text_h(f) * scale;
+    float ca = cosf(angle), sa = sinf(angle);
+    float x = -w * 0.5f;
+    for (const char *p = s; *p; p++) {
+        unsigned char ch = (unsigned char)*p;
+        if (ch != ' ') {
+            /* each glyph's top-left corner, walked along the rotated baseline */
+            float lx = x, ly = -h * 0.5f;
+            gfx_spr_ex(glyph_id(f, ch), cx + lx * ca - ly * sa, cy + lx * sa + ly * ca, angle, (float)scale, (float)scale, c);
+        }
+        x += glyph_adv(f, ch) * scale;
+    }
 }

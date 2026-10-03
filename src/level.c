@@ -51,7 +51,7 @@ void collide_circle(V2 *pos, float r, V2 *vel) {
 }
 
 /* ------------------------------------------------------------ sight lines */
-static bool seg_intersect(V2 p, V2 p2, V2 q, V2 q2) {
+bool seg_cross(V2 p, V2 p2, V2 q, V2 q2) {
     V2 r = v2_sub(p2, p), s = v2_sub(q2, q);
     float den = r.x * s.y - r.y * s.x;
     if (fabsf(den) < 1e-6f) return false;
@@ -66,7 +66,7 @@ static bool doors_block(V2 a, V2 b) {
         Door *d = &W.doors[i];
         if (d->glass) continue;
         V2 e = v2_add(d->hinge, v2_scale(v2_angle(d->base + d->ang), d->len));
-        if (seg_intersect(a, b, d->hinge, e)) return true;
+        if (seg_cross(a, b, d->hinge, e)) return true;
     }
     return false;
 }
@@ -81,9 +81,10 @@ bool los_clear(V2 a, V2 b, bool for_bullets) {
     float tdx = dx != 0 ? fabsf(TILE / dx) : 1e9f, tdy = dy != 0 ? fabsf(TILE / dy) : 1e9f;
     float nx = dx > 0 ? (tx + 1) * TILE : tx * TILE, ny = dy > 0 ? (ty + 1) * TILE : ty * TILE;
     float tmx = dx != 0 ? fabsf((nx - a.x) / dx) : 1e9f, tmy = dy != 0 ? fabsf((ny - a.y) / dy) : 1e9f;
-    for (int guard = 0; guard < 400; guard++) {
-        if (tx == ex && ty == ey) break;
-        if (tmx < tmy) { tmx += tdx; tx += sx; }
+    /* exactly one step per tile boundary crossed: float drift can never overshoot the end tile */
+    int steps = abs(ex - tx) + abs(ey - ty);
+    for (int i = 0; i < steps; i++) {
+        if (ty == ey || (tx != ex && tmx < tmy)) { tmx += tdx; tx += sx; }
         else { tmy += tdy; ty += sy; }
         if (tx == ex && ty == ey) break;
         if (cell_flag(tx, ty, flag)) return false;
@@ -106,6 +107,7 @@ static int g_cost[MAP_MAX_H * MAP_MAX_W];
 static int g_from[MAP_MAX_H * MAP_MAX_W];
 static unsigned g_stamp[MAP_MAX_H * MAP_MAX_W];
 static unsigned g_closed[MAP_MAX_H * MAP_MAX_W];
+static unsigned g_goal[MAP_MAX_H * MAP_MAX_W];
 static unsigned g_gen = 1;
 static int heap[MAP_MAX_H * MAP_MAX_W * 2];
 static int heap_f[MAP_MAX_H * MAP_MAX_W * 2];
@@ -154,36 +156,53 @@ static bool walk_line(V2 a, V2 b, float r) {
     return true;
 }
 
-bool path_find(V2 from, V2 to, int out[][2], int max, int *len) {
-    *len = 0;
-    int sx = tile_of(from.x), sy = tile_of(from.y), gx = tile_of(to.x), gy = tile_of(to.y);
-    if (!in_map(sx, sy) || !in_map(gx, gy)) return false;
-    if (!walkable_tile(gx, gy)) {
-        /* goal inside an obstacle: pick nearest walkable neighbour */
-        bool found = false;
-        for (int r = 1; r <= 2 && !found; r++)
-            for (int oy = -r; oy <= r && !found; oy++)
-                for (int ox = -r; ox <= r && !found; ox++)
-                    if (walkable_tile(gx + ox, gy + oy)) { gx += ox; gy += oy; found = true; }
-        if (!found) return false;
-    }
+/* octile distance in path cost units (10 straight, 14 diagonal): admissible and consistent */
+static int octile(int dx, int dy) {
+    dx = abs(dx);
+    dy = abs(dy);
+    return dx > dy ? 10 * dx + 4 * dy : 10 * dy + 4 * dx;
+}
+
+bool path_find(V2 from, V2 to, int out[][2], int max, int *len) { return path_find_r(from, to, 5.5f, out, max, len); }
+
+/* actors wider than a tile can't squeeze through 1-tile doors and gaps: they need a free 2x2 block around the tile */
+static bool g_wide;
+static bool roomy(int x, int y) {
+    for (int oy = -1; oy <= 0; oy++)
+        for (int ox = -1; ox <= 0; ox++)
+            if (walkable_tile(x + ox, y + oy) && walkable_tile(x + ox + 1, y + oy) && walkable_tile(x + ox, y + oy + 1) &&
+                walkable_tile(x + ox + 1, y + oy + 1))
+                return true;
+    return false;
+}
+
+/* one A* pass; the goals are the walkable tiles within gr of (gx,gy). returns the goal reached, or -1 */
+static int astar(int start, int gx, int gy, int gr) {
     g_gen++;
-    if (g_gen == 0) { memset(g_stamp, 0, sizeof g_stamp); memset(g_closed, 0, sizeof g_closed); g_gen = 1; }
+    if (g_gen == 0) {
+        memset(g_stamp, 0, sizeof g_stamp);
+        memset(g_closed, 0, sizeof g_closed);
+        memset(g_goal, 0, sizeof g_goal);
+        g_gen = 1;
+    }
+    bool any = false;
+    for (int oy = -gr; oy <= gr; oy++)
+        for (int ox = -gr; ox <= gr; ox++)
+            if (walkable_tile(gx + ox, gy + oy)) { g_goal[(gy + oy) * MAP_MAX_W + gx + ox] = g_gen; any = true; }
+    if (!any) return -1;
     heap_n = 0;
-    int start = sy * MAP_MAX_W + sx, goal = gy * MAP_MAX_W + gx;
     g_stamp[start] = g_gen;
     g_cost[start] = 0;
     g_from[start] = -1;
     heap_push(start, 0);
-    int expanded = 0;
-    bool ok = false;
+    int expanded = 0, goal = -1;
     static const int DX[8] = {1, -1, 0, 0, 1, 1, -1, -1}, DY[8] = {0, 0, 1, -1, 1, -1, 1, -1};
     while (heap_n > 0 && expanded < 6000) {
         int cur = heap_pop();
         if (g_closed[cur] == g_gen) continue;
         g_closed[cur] = g_gen;
         expanded++;
-        if (cur == goal) { ok = true; break; }
+        if (g_goal[cur] == g_gen) { goal = cur; break; }
         int cx = cur % MAP_MAX_W, cy = cur / MAP_MAX_W;
         for (int k = 0; k < 8; k++) {
             int nx = cx + DX[k], ny = cy + DY[k];
@@ -191,6 +210,7 @@ bool path_find(V2 from, V2 to, int out[][2], int max, int *len) {
             if (k >= 4 && (!walkable_tile(cx + DX[k], cy) || !walkable_tile(cx, cy + DY[k]))) continue;
             int n = ny * MAP_MAX_W + nx;
             if (g_closed[n] == g_gen) continue;
+            if (g_wide && g_goal[n] != g_gen && !roomy(nx, ny)) continue;
             int step = k < 4 ? 10 : 14;
             /* discourage hugging glass / doors a bit */
             if (W.cells[ny][nx].flags & CF_DOOR) step += 4;
@@ -199,12 +219,28 @@ bool path_find(V2 from, V2 to, int out[][2], int max, int *len) {
                 g_stamp[n] = g_gen;
                 g_cost[n] = nc;
                 g_from[n] = cur;
-                int h = (abs(nx - gx) + abs(ny - gy)) * 10;
+                /* every goal lies within octile 14*gr of (gx,gy), so this stays admissible */
+                int h = MAXF(0, octile(nx - gx, ny - gy) - 14 * gr);
                 heap_push(n, nc + h);
             }
         }
     }
-    if (!ok) return false;
+    return goal;
+}
+
+bool path_find_r(V2 from, V2 to, float radius, int out[][2], int max, int *len) {
+    *len = 0;
+    int sx = tile_of(from.x), sy = tile_of(from.y), gx = tile_of(to.x), gy = tile_of(to.y);
+    if (!in_map(sx, sy) || !in_map(gx, gy)) return false;
+    int start = sy * MAP_MAX_W + sx, goal = -1;
+    g_wide = radius > TILE * 0.5f - 0.5f;
+    if (walkable_tile(gx, gy)) goal = astar(start, gx, gy, 0);
+    /* goal inside an obstacle (or, for the wide, somewhere too tight): any walkable tile next to it will do,
+     * whichever the search reaches first, so a neighbour sealed in a pocket can't fail the search; two tiles
+     * out only if one tile out is unreachable */
+    if (goal < 0 && (g_wide || !walkable_tile(gx, gy)))
+        for (int gr = 1; gr <= 2 && goal < 0; gr++) goal = astar(start, gx, gy, gr);
+    if (goal < 0) return false;
     /* reconstruct */
     static int tmp[MAP_MAX_H * MAP_MAX_W];
     int n = 0;
@@ -218,7 +254,7 @@ bool path_find(V2 from, V2 to, int out[][2], int max, int *len) {
         for (int j = 0; j < anchor; j++) {
             V2 p = tile_center(tmp[j] % MAP_MAX_W, tmp[j] / MAP_MAX_W);
             if (anchor - j > 24) continue;
-            if (walk_line(apos, p, 4.5f)) { best = j; break; }
+            if (walk_line(apos, p, radius - 0.5f)) { best = j; break; }
         }
         out[outn][0] = tmp[best] % MAP_MAX_W;
         out[outn][1] = tmp[best] / MAP_MAX_W;
@@ -227,7 +263,7 @@ bool path_find(V2 from, V2 to, int out[][2], int max, int *len) {
         anchor = best;
     }
     *len = outn;
-    return outn > 0 || (sx == gx && sy == gy);
+    return outn > 0 || goal == start;
 }
 
 /* -------------------------------------------------------------- autotile */
@@ -265,6 +301,7 @@ static int wall_sprite(int type) {
     case WL_MALL: return SPR_WT_MALL;
     case WL_HEDGE: return SPR_WT_HEDGE;
     case WL_RUIN: return SPR_WT_RUIN;
+    case WL_GLASS: return SPR_WT_GLASS;
     default: return SPR_WT_CONCRETE;
     }
 }
@@ -472,14 +509,28 @@ V2 random_floor_spot(Rng *r, bool indoor, float min_dist, V2 from) {
     for (int tries = 0; tries < 400; tries++) {
         int tx = rng_range(r, 1, W.w - 2), ty = rng_range(r, 1, W.h - 2);
         Cell *c = &W.cells[ty][tx];
-        if (c->flags & (CF_SOLID | CF_NOSPAWN | CF_EXIT)) continue;
+        /* not on furniture or a smashed window either (a broken pane can be a one-tile pocket) */
+        if ((c->flags & (CF_SOLID | CF_NOSPAWN | CF_EXIT)) || c->obj) continue;
         if (!c->reach) continue;
         if (indoor != ((c->flags & CF_INDOOR) != 0)) continue;
         V2 p = tile_center(tx, ty);
         if (v2_dist(p, from) < min_dist) continue;
         return p;
     }
-    return W.spawn;
+    /* unlucky (or a tiny map): take the farthest acceptable tile rather than ever falling back onto the
+     * player's spawn; drop the indoor/outdoor preference only if nothing else is left */
+    V2 best = from;
+    float bd = -1;
+    for (int pass = 0; pass < 2 && bd < 0; pass++)
+        for (int ty = 1; ty < W.h - 1; ty++)
+            for (int tx = 1; tx < W.w - 1; tx++) {
+                Cell *c = &W.cells[ty][tx];
+                if ((c->flags & (CF_SOLID | CF_NOSPAWN | CF_EXIT)) || c->obj || !c->reach) continue;
+                if (pass == 0 && indoor != ((c->flags & CF_INDOOR) != 0)) continue;
+                float d = v2_dist(tile_center(tx, ty), from);
+                if (d > bd) { bd = d; best = tile_center(tx, ty); }
+            }
+    return best;
 }
 
 void break_glass(int tx, int ty, V2 from) {

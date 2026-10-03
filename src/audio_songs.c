@@ -8,7 +8,8 @@
    MUS_LEVEL_C    A minor    132 bpm  "Loading Dock"      fast industrial
    MUS_BOSS       E phrygian 140 bpm  "Manager"           boss, b2 menace + phrygian dominant
    MUS_SAFEHOUSE  C / A min   80 bpm  "Back Room"         warm, sad, lo-fi keys
-   MUS_ENDING     A min -> C  88 bpm  "After Hours"       title motif returns, minor -> major */
+   MUS_ENDING     A min -> C  88 bpm  "After Hours"       title motif returns, minor -> major
+   MUS_STORY      A minor     70 bpm  "Three Winters"     the intro: drone, a bell, keys, a lullaby */
 #include "audio_internal.h"
 
 /* ======================================================================== */
@@ -581,6 +582,48 @@ static const AuSong song_ending = {
     .rev_decay = 3.4f, .rev_damp = 5000.0f, .duck_time = 0.16f, .master = 0.55f,
     .sec = ending_secs, .nsec = 7, .loop_to = 1 };
 
+/* ======================================================================== */
+/* STORY - A minor, 70 bpm, no drums. Scored to the intro's shots:          */
+/* the dark city, the lights going, the streets, the aisle, the greenhouse.  */
+/* ======================================================================== */
+static const char ST_CH_DARK[]  = "Am F";
+static const char ST_CH_OUT[]   = "C G";
+static const char ST_CH_A[]     = "Am F C G";
+static const char ST_CH_B[]     = "Dm Am F E";
+static const char ST_CH_HOME[]  = "Fmaj7 C Am7 Gsus4_G";
+
+static const char ST_PAD[]   = "x:16";
+static const char ST_DRONE[] = "1:16";
+static const char ST_BELL1[] = ".:8 5:8";
+static const char ST_BELL2[] = "5:3 4:3 3:4 .:6";
+static const char ST_BASS[]  = "1:12 5,:4";
+static const char ST_EP[]    = "x:12 x?:4";
+static const char ST_ARP[]   = "1:2 3:2 5:2 3:2 1':2 5:2 3:2 5:2";
+static const char ST_LEAD[] =
+    "E5:6 D5:2 C5:8  G4:4 C5:4 E5:8  D5:6 C5:2 A4:8  B4:8 ~C5:4 D5:4";
+
+static const AuSection story_secs[] = {
+    { 2, ST_CH_DARK, { NULL, NULL, NULL, NULL, ST_PAD, NULL, NULL, ST_DRONE }, 0.25f, 0.6f, 0 },
+    { 2, ST_CH_OUT,  { NULL, NULL, NULL, NULL, ST_PAD, ST_BELL1, NULL, ST_DRONE }, 0.6f, 0.8f, 0 },
+    { 4, ST_CH_A,    { NULL, ST_BASS, NULL, ST_EP, ST_PAD, NULL, NULL, NULL }, 0.8f, 1.0f, 0 },
+    { 4, ST_CH_B,    { NULL, ST_BASS, NULL, ST_EP, ST_PAD, ST_BELL2, ST_ARP, NULL }, 0, 0, 0 },
+    { 4, ST_CH_HOME, { NULL, ST_BASS, ST_LEAD, ST_EP, ST_PAD, NULL, ST_ARP, NULL }, 0, 0, 0 },
+    { 4, ST_CH_A,    { NULL, ST_BASS, ST_LEAD, ST_EP, ST_PAD, ST_BELL2, NULL, NULL }, 0, 0, 0 },
+};
+static const AuSong song_story = {
+    .name = "story", .bpm = 70, .swing = 0.0f, .kit = AU_KIT_SOFT,
+    .patch  = { NULL, &P_BASS_SUB, &P_LEAD_SOFT, &P_EPIANO, &P_PAD_WARM, &P_BELL, &P_PLUCK_SOFT, &P_DRONE },
+    .center = { 0, 33, 0, 62, 62, 79, 67, 45 },
+    .xp     = { 0 },
+    .gain   = { 0, 0.5f, 0.46f, 0.76f, 0.6f, 0.6f, 0.7f, 0.38f },
+    .pan    = { 0, 0, 0.05f, -0.1f, 0, 0.35f, 0.3f, 0 },
+    .dsend  = { 0, 0, 0.35f, 0.18f, 0.0f, 0.45f, 0.35f, 0 },
+    .rsend  = { 0, 0.02f, 0.4f, 0.35f, 0.4f, 0.55f, 0.35f, 0.3f },
+    .duck   = { 0 },
+    .delay_beats = 0.75f, .delay_fb = 0.4f, .delay_wow = 0.8f,
+    .rev_decay = 3.8f, .rev_damp = 4000.0f, .duck_time = 0.15f, .master = 0.55f,
+    .sec = story_secs, .nsec = 6, .loop_to = 2 };
+
 const AuSong *const au_songs[MUS_COUNT] = {
     [MUS_NONE] = NULL,
     [MUS_MENU] = &song_menu,
@@ -590,4 +633,5 @@ const AuSong *const au_songs[MUS_COUNT] = {
     [MUS_BOSS] = &song_boss,
     [MUS_SAFEHOUSE] = &song_safe,
     [MUS_ENDING] = &song_ending,
+    [MUS_STORY] = &song_story,
 };

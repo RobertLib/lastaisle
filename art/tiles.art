@@ -355,54 +355,54 @@ AAAAAAA4AAAAAAAA AAAAAAAAAAAAAAAA
 .000000000000000000000000000000.
 
 
-# mall: plum tiles edged with a pink neon tube
+# mall: dark marble slabs edged with a tarnished brass rail
 @sprite wt_mall 32 48
-.00000000000000.01pmqqq2Uqqqmp10
-011111111111111011pmqqq2qqqqmp11
-01pppppppppppp10pppmqqq2qqqqmppp
-01pmmmmmmmmmmp10mmmmqqq2qqqqmmmm
-01pmqqq2qqqqmp10qqqqqqq2qqqqqqq2
-01pmqqq2qqqqmp10qqqqqqq2qqqqqqq2
-01pmqqq2qqqqmp10qqqqqqq2qqqqqqq2
-01pm22222222mp102222222222222222
-01pmqqq2Uqqqmp10Uqqqqqq2Uqqqqqq2
-01pmqqq2qqqqmp10qqqqqqq2qqqqqqq2
-01pmqqq2qqqqmp10qqqqqqq2qqqqqqq2
-01pmqqq2qqqqmp10qqqqqqq2qqqqqqq2
-01pmmmmmmmmmmp10mmmmqqq2qqqqmmmm
-01pppppppppppp10pppmqqq2qqqqmppp
-011111111111111011pmqqq2qqqqmp11
-.00000000000000.01pm22222222mp10
+.00000000000000.01YnMMM2WMMMnY10
+011111111111111011YnMMM2MMMMnY11
+01YYYYYYYYYYYY10YYYnMMM2MMMMnYYY
+01YnnnnnnnnnnY10nnnnMMM2MMMMnnnn
+01YnMMM2MMMMnY10MMMMMMM2MMMMMMM2
+01YnMMM2MMMMnY10MMMMMMM2MMMMMMM2
+01YnMMM2MMMMnY10MMMMMMM2MMMMMMM2
+01Yn22222222nY102222222222222222
+01YnMMM2WMMMnY10WMMMMMM2WMMMMMM2
+01YnMMM2MMMMnY10MMMMMMM2MMMMMMM2
+01YnMMM2MMMMnY10MMMMMMM2MMMMMMM2
+01YnMMM2MMMMnY10MMMMMMM2MMMMMMM2
+01YnnnnnnnnnnY10nnnnMMM2MMMMnnnn
+01YYYYYYYYYYYY10YYYnMMM2MMMMnYYY
+011111111111111011YnMMM2MMMMnY11
+.00000000000000.01Yn22222222nY10
 .000000000000000000000000000000.
 01111111111111111111111111111110
-01pppppppppppppppppppppppppppp10
-01pmmmmmmmmmmmmmmmmmmmmmmmmmmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pm222222222222222222222222mp10
-01pmqqq2Uqqqqqq2Uqqqqqq2Uqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pm222222222222222222222222mp10
-01pmqqq2Uqqqqqq2Uqqqqqq2Uqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pm222222222222222222222222mp10
-01pmqqq2Uqqqqqq2Uqqqqqq2Uqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmqqq2qqqqqqq2qqqqqqq2qqqqmp10
-01pmmmmmmmmmmmmmmmmmmmmmmmmmmp10
-01pppppppppppppppppppppppppppp10
+01YYYYYYYYYYYYYYYYYYYYYYYYYYYY10
+01YnnnnnnnnnnnnnnnnnnnnnnnnnnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01Yn222222222222222222222222nY10
+01YnMMM2WMMMMMM2WMMMMMM2WMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01Yn222222222222222222222222nY10
+01YnMMM2WMMMMMM2WMMMMMM2WMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01Yn222222222222222222222222nY10
+01YnMMM2WMMMMMM2WMMMMMM2WMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnMMM2MMMMMMM2MMMMMMM2MMMMnY10
+01YnnnnnnnnnnnnnnnnnnnnnnnnnnY10
+01YYYYYYYYYYYYYYYYYYYYYYYYYYYY10
 01111111111111111111111111111110
 .000000000000000000000000000000.
 
@@ -717,3 +717,73 @@ GGvV............ ......v......... .....Gv.Gv......
 ...:nw:......... ...........e5,..
 ....,N,......... ............,...
 ................ ................
+
+# ---------------------------------------------------------------- THE GREENHOUSE
+# glass walls: panes in dark metal frames (same autotile layout as wt_mall), crops in the beds
+@sprite wt_glass 32 48
+.00000000000000.01JjzzijzzzzjJ10
+011111111111111011JjzzijzIIzjJ11
+01JJJJJJJJJJJJ10JJJjzzijzIzzjJJJ
+01JjjjjjjjjjjJ10jjjjzzijzzzzjjjj
+01JjziijzzzzjJ10zzzzziijzzzzziij
+01JjiiijzzzzjJ10zzzziiijzzzziiij
+01JjiiijiiiijJ10iiiiiiijiiiiiiij
+01JjjjjjjjjjjJ10jjjjjjjjjjjjjjjj
+01JjzzijzzzzjJ10zzzzzzijzzzzzzij
+01JjzzijzIIzjJ10zIIzzzijzIIzzzij
+01JjzzijzIzzjJ10zIzzzzijzIzzzzij
+01JjzzijzzzzjJ10zzzzzzijzzzzzzij
+01JjjjjjjjjjjJ10jjjjziijzzzzjjjj
+01JJJJJJJJJJJJ10JJJjiiijzzzzjJJJ
+011111111111111011JjiiijiiiijJ11
+.00000000000000.01JjjjjjjjjjjJ10
+.000000000000000000000000000000.
+01111111111111111111111111111110
+01JJJJJJJJJJJJJJJJJJJJJJJJJJJJ10
+01JjjjjjjjjjjjjjjjjjjjjjjjjjjJ10
+01JjziijzzzzziijzzzzziijzzzzjJ10
+01JjiiijzzzziiijzzzziiijzzzzjJ10
+01JjiiijiiiiiiijiiiiiiijiiiijJ10
+01JjjjjjjjjjjjjjjjjjjjjjjjjjjJ10
+01JjzzijzzzzzzijzzzzzzijzzzzjJ10
+01JjzzijzIIzzzijzIIzzzijzIIzjJ10
+01JjzzijzIzzzzijzIzzzzijzIzzjJ10
+01JjzzijzzzzzzijzzzzzzijzzzzjJ10
+01JjziijzzzzziijzzzzziijzzzzjJ10
+01JjiiijzzzziiijzzzziiijzzzzjJ10
+01JjiiijiiiiiiijiiiiiiijiiiijJ10
+01JjjjjjjjjjjjjjjjjjjjjjjjjjjJ10
+01JjzzijzzzzzzijzzzzzzijzzzzjJ10
+01JjzzijzIIzzzijzIIzzzijzIIzjJ10
+01JjzzijzIzzzzijzIzzzzijzIzzjJ10
+01JjzzijzzzzzzijzzzzzzijzzzzjJ10
+01JjziijzzzzziijzzzzziijzzzzjJ10
+01JjiiijzzzziiijzzzziiijzzzzjJ10
+01JjiiijiiiiiiijiiiiiiijiiiijJ10
+01JjjjjjjjjjjjjjjjjjjjjjjjjjjJ10
+01JjzzijzzzzzzijzzzzzzijzzzzjJ10
+01JjzzijzIIzzzijzIIzzzijzIIzjJ10
+01JjzzijzIzzzzijzIzzzzijzIzzjJ10
+01JjzzijzzzzzzijzzzzzzijzzzzjJ10
+01JjjjjjjjjjjjjjjjjjjjjjjjjjjJ10
+01JJJJJJJJJJJJJJJJJJJJJJJJJJJJ10
+01111111111111111111111111111110
+.000000000000000000000000000000.
+
+@frames o_crop 4 16 16
+................ ................ ................ ................
+................ ................ ......v......... ................
+....v.....v..... .....vvvv....... .....vGv..v..... ..v...v...v.....
+...vGv...vGv.... ...vvGGGGvv..... ....vGlGv.vGv... .vGv.vGv.vGv....
+....vGv.vGv..... ..vGGlGGGGGv.... .....vGvvGlGv... ..vV..vV..vV....
+..v..vGvGv..v... .vGGGGGlGGGGv... ..vv..vVGGGv.... ...V...V...V....
+.vGv..vVv..vGv.. .vGlGGGGGGGVv... .vGGv.vVVv...... ................
+..vGv.vV..vGv... vGGGGGvGGGGGVv.. ..vrrv.V..vv.... ................
+...vGvVVvGv..... vGGGGGGGGGGVVv.. ..vrRvVVvGGv.... ..v...v...v.....
+....vVVVVv...... .vGGGGGGGGVVv... ...vv.VvrrGGv... .vGv.vGv.vGv....
+......VV........ .vVGGGGGGVVVv... .......vrRv..... ..vV..vV..vV....
+......VV........ ..vVVGGGVVVv.... ......vVvv...... ...V...V...V....
+.....,,,,....... ...vvVVVVvv..... .....,,,,....... ................
+................ .....,,,,,...... ................ ................
+................ ................ ................ ................
+................ ................ ................ ................

@@ -957,6 +957,128 @@ static void sfx_surrender(void)
     TONE(.t0 = 0.5f, .dur = 0.28f, .amp = 0.22f, .wave = TW_TRI, .f0 = 880, .f1 = 415, .att = 0.004f, .dec = 0.1f);
 }
 
+/* animals: small, open vocal tracts (formants shifted up) over chest thumps and breath */
+static void sfx_bark(void)
+{
+    begin(0.6f);
+    THUMP(.t0 = 0, .f0 = vr(230, 0.1f), .f1 = 110, .ptau = 0.012f, .dec = 0.03f, .amp = 0.55f, .drive = 2.0f);
+    NOISE(.t0 = 0, .dur = 0.1f, .amp = 0.35f, .type = NZ_BP, .f0 = 1900, .f1 = 900, .q = 1.0f, .att = 0.003f, .dec = 0.025f);
+    VOICE(.t0 = 0.004f, .dur = vr(0.15f, 0.12f), .amp = 1.0f, .p0 = vr(420, 0.1f), .pm = vr(520, 0.1f), .p1 = vr(250, 0.1f), .v0 = V_AE, .v1 = V_U,
+          .breath = 0.45f, .drive = 4.0f, .jitter = 2.0f, .att = 0.006f, .rel = 0.06f, .fshift = 1.35f);
+    fx_drive(0, 0, 1.4f);
+    fx_reverb(0.12f, 0.6f, 4000.0f, 0.6f, 0.01f);
+}
+
+static void sfx_growl(void)
+{
+    begin(1.1f);
+    VOICE(.t0 = 0, .dur = vr(0.85f, 0.12f), .amp = 1.0f, .p0 = vr(92, 0.1f), .pm = vr(108, 0.1f), .p1 = vr(84, 0.1f), .v0 = V_U, .v1 = V_ER,
+          .breath = 0.6f, .drive = 3.5f, .jitter = 4.0f, .gurgle = 0.85f, .att = 0.12f, .rel = 0.25f, .fshift = 1.25f);
+    NOISE(.t0 = 0.05f, .dur = 0.8f, .amp = 0.22f, .type = NZ_BP, .f0 = 700, .f1 = 480, .q = 2.0f, .att = 0.15f, .dec = -1);
+    fx_crush(8.0f, 2, 0.25f);
+}
+
+static void sfx_yelp(void)
+{
+    begin(0.5f);
+    VOICE(.t0 = 0, .dur = vr(0.26f, 0.15f), .amp = 1.0f, .p0 = vr(680, 0.1f), .pm = vr(1040, 0.1f), .p1 = vr(520, 0.1f), .v0 = V_I, .v1 = V_E,
+          .breath = 0.25f, .drive = 1.8f, .jitter = 1.5f, .vib = 0.03f, .vrate = 12.0f, .att = 0.006f, .rel = 0.12f, .fshift = 1.7f);
+    NOISE(.t0 = 0, .dur = 0.05f, .amp = 0.25f, .type = NZ_BP, .f0 = 3000, .f1 = 2000, .q = 1.2f, .att = 0.002f, .dec = 0.012f);
+}
+
+static void sfx_hiss(void)
+{
+    begin(0.8f);
+    l_click(0, 0.45f, 0.0004f);
+    NOISE(.t0 = 0, .dur = 0.06f, .amp = 0.8f, .type = NZ_BP, .f0 = 2500, .f1 = 1800, .q = 1.2f, .att = 0.001f, .dec = 0.015f);
+    NOISE(.t0 = 0.02f, .dur = vr(0.6f, 0.15f), .amp = 0.9f, .type = NZ_HP, .f0 = 3200, .f1 = 4200, .q = 0.9f, .att = 0.04f, .dec = -1);
+    NOISE(.t0 = 0.02f, .dur = 0.55f, .amp = 0.5f, .type = NZ_BP, .f0 = 5500, .f1 = 6500, .q = 2.5f, .att = 0.05f, .dec = -1);
+}
+
+static void sfx_bite(void)
+{
+    begin(0.3f);
+    l_click(0, 0.9f, 0.0003f);
+    float fr[3] = { vr(1450, 0.1f), vr(2300, 0.1f), 3700 }, ga[3] = { 1.0f, 0.6f, 0.3f }, dc[3] = { 0.012f, 0.008f, 0.005f };
+    l_modes(0, 0.6f, 3, fr, ga, dc, 0, 0.1f, 0, 0);
+    THUMP(.t0 = 0, .f0 = 300, .f1 = 140, .ptau = 0.006f, .dec = 0.02f, .amp = 0.5f, .drive = 2.0f);
+    NOISE(.t0 = 0.003f, .dur = 0.08f, .amp = 0.4f, .type = NZ_BP, .f0 = 1200, .f1 = 600, .q = 1.5f, .att = 0.001f, .dec = 0.02f);
+    l_squish(0.01f, 0.12f, 0.2f, 900, 400, 3.0f, 30.0f);
+}
+
+/* plants: wet lip-pops and bubbly squish, acid fizz, whipping tendrils, dry leafy crackle */
+static void sfx_spit(void)
+{
+    begin(0.35f);
+    /* "p": lip-pop release - a click on a short pressure thump */
+    l_click(0, 0.55f, 0.0003f);
+    THUMP(.t0 = 0, .f0 = vr(320, 0.12f), .f1 = 130, .ptau = 0.005f, .dec = 0.016f, .amp = 0.7f, .drive = 1.8f);
+    /* "tuh": aspirated burst through a short throaty "uh" */
+    NOISE(.t0 = 0.002f, .dur = 0.1f, .amp = 0.8f, .type = NZ_BP, .f0 = vr(2600, 0.15f), .f1 = 1100, .q = 1.1f, .att = 0.002f, .dec = vr(0.022f, 0.2f));
+    VOICE(.t0 = 0.006f, .dur = vr(0.08f, 0.15f), .amp = 0.35f, .p0 = vr(210, 0.1f), .pm = 240, .p1 = 150, .v0 = V_U, .v1 = V_ER,
+          .breath = 0.9f, .drive = 2.0f, .jitter = 3.0f, .gurgle = 0.7f, .att = 0.004f, .rel = 0.04f, .fshift = 1.4f);
+    /* the glob leaving: gurgly squish and rising bubble "bloops" */
+    l_squish(0.012f, vr(0.24f, 0.15f), 0.9f, vr(1700, 0.2f), vr(420, 0.2f), 3.0f, vr(55.0f, 0.25f));
+    TONE(.t0 = vr(0.02f, 0.3f), .dur = 0.045f, .amp = 0.3f, .wave = TW_SINE, .f0 = vr(450, 0.15f), .f1 = vr(1300, 0.15f), .att = 0.002f, .dec = 0.014f);
+    TONE(.t0 = vr(0.07f, 0.3f), .dur = 0.03f, .amp = 0.15f, .wave = TW_SINE, .f0 = 700, .f1 = 1800, .att = 0.001f, .dec = 0.008f);
+    fx_drive(0, 0, 1.5f);
+}
+
+static void sfx_splat(void)
+{
+    begin(0.45f);
+    /* impact: soft wet slap */
+    l_click(0, 0.4f, 0.0004f);
+    THUMP(.t0 = 0, .f0 = vr(260, 0.15f), .f1 = 120, .ptau = 0.007f, .dec = 0.018f, .amp = 0.5f, .drive = 2.0f);
+    NOISE(.t0 = 0, .dur = 0.07f, .amp = 0.9f, .type = NZ_LP, .f0 = vr(3800, 0.2f), .f1 = 600, .q = 0.9f, .att = 0.0005f, .dec = vr(0.014f, 0.2f));
+    l_squish(0.003f, vr(0.16f, 0.15f), 0.85f, vr(2200, 0.2f), vr(500, 0.2f), 2.8f, vr(70.0f, 0.25f));
+    l_squish(0.02f, 0.12f, 0.4f, vr(1100, 0.2f), 350, 3.5f, 40.0f);
+    /* spatter droplets */
+    l_grains(0.006f, 0.08f, 8, 0.0f, 0.35f, 1800, 5000, 0.002f, 0.005f, 0, 0.0f);
+    /* acid sizzle: hissy fizz with a dense crackle that thins out */
+    NOISE(.t0 = 0.015f, .dur = vr(0.3f, 0.12f), .amp = 0.3f, .type = NZ_BP, .f0 = 5200, .f1 = 4200, .q = 0.9f, .att = 0.03f, .dec = 0.08f);
+    l_grains(0.015f, 0.3f, 50, 0.1f, 0.35f, 2500, 7500, 0.0005f, 0.0015f, 0, 0.0f);
+    fx_drive(0, 0, 1.6f);
+}
+
+static void sfx_lash(void)
+{
+    begin(0.3f);
+    const float tc = vr(0.12f, 0.12f);   /* moment of the crack */
+    /* rising airy swish: band-passed noise sweeping up into the crack */
+    NOISE(.t0 = 0, .dur = tc + 0.01f, .amp = 0.5f, .type = NZ_BP, .f0 = vr(450, 0.15f), .f1 = vr(3600, 0.15f), .q = 1.8f, .att = tc * 0.8f, .dec = -1);
+    NOISE(.t0 = 0, .dur = tc + 0.006f, .amp = 0.18f, .type = NZ_BP, .f0 = 900, .f1 = vr(5200, 0.12f), .q = 6.0f, .att = tc * 0.85f, .dec = -1);
+    /* whip crack: near-instant snap */
+    l_click(tc, 1.5f, 0.00015f);
+    NOISE(.t0 = tc, .dur = 0.03f, .amp = 2.0f, .type = NZ_HP, .f0 = 2800, .f1 = 1800, .q = 0.8f, .att = 0.0001f, .dec = 0.0035f);
+    NOISE(.t0 = tc, .dur = 0.06f, .amp = 0.8f, .type = NZ_BP, .f0 = vr(3200, 0.15f), .f1 = 1500, .q = 1.3f, .att = 0.0002f, .dec = 0.009f);
+    THUMP(.t0 = tc, .f0 = 520, .f1 = 240, .ptau = 0.004f, .dec = 0.008f, .amp = 0.3f, .drive = 1.5f);
+    /* leafy rattle after the snap */
+    l_grains(tc + 0.004f, 0.14f, 18, 0.06f, 0.28f, 1500, 5500, 0.001f, 0.003f, 0, 0.0f);
+    fx_drive(0, 0, 1.4f);
+    fx_reverb(0.1f, 0.5f, 6000.0f, 0.6f, 0.006f);
+}
+
+static void sfx_rustle(void)
+{
+    begin(0.6f);
+    /* a few irregular, overlapping shakes of leafy band-passed noise, each carrying
+       a scatter of tiny dry leaf ticks; no pitched parts so it stays easy on the ear */
+    float t = 0.0f, span = au_rrange(&rng, 0.22f, 0.28f);
+    while (t < span) {
+        float d = au_rrange(&rng, 0.06f, 0.12f), f = au_rrange(&rng, 1800, 3800);
+        float a = au_rrange(&rng, 0.4f, 1.0f) * (1.0f - 0.5f * t / span);
+        NOISE(.t0 = t, .dur = d, .amp = a * 0.5f, .type = NZ_BP, .f0 = f, .f1 = f * au_rrange(&rng, 0.75f, 1.25f), .q = 0.8f, .att = d * 0.35f, .dec = -1);
+        l_grains(t, d, 18 + (int)(au_rnd(&rng) * 10.0f), 0.0f, a * 0.2f, 1500, 6500, 0.0005f, 0.0014f, 0, 0.0f);
+        t += d * au_rrange(&rng, 0.45f, 0.8f);
+    }
+    /* now and then a twig ticks */
+    if (au_rnd(&rng) < 0.6f) l_grains(au_rrange(&rng, 0.03f, t), 0.01f, 1, 0.0f, 0.05f, 1600, 3200, 0.003f, 0.007f, 1, 0.0f);
+    /* soft mass of the foliage moving */
+    NOISE(.t0 = 0, .dur = t + 0.05f, .amp = 0.4f, .type = NZ_BP, .f0 = 650, .f1 = 450, .q = 0.7f, .att = 0.04f, .dec = -1);
+    fx_filter(NZ_LP, 6500.0f, 0.707f);
+}
+
 static void sfx_door_slam(void)
 {
     begin(1.1f);
@@ -1406,6 +1528,11 @@ static const SfxDef defs[SFX_COUNT] = {
     [SFX_FOOTSTEP]      = { "footstep",      sfx_footstep,      -27.0f, 0, 4 },
     [SFX_ALERT]         = { "alert",         sfx_alert,          -12.0f, 1, 1 },
     [SFX_SURRENDER]     = { "surrender",     sfx_surrender,      -13.0f, 0, 1 },
+    [SFX_BARK]          = { "bark",          sfx_bark,            -9.0f, 0, 3 },
+    [SFX_GROWL]         = { "growl",         sfx_growl,          -15.0f, 0, 2 },
+    [SFX_YELP]          = { "yelp",          sfx_yelp,           -12.0f, 0, 3 },
+    [SFX_HISS]          = { "hiss",          sfx_hiss,           -16.0f, 0, 2 },
+    [SFX_BITE]          = { "bite",          sfx_bite,            -8.0f, 0, 3 },
     [SFX_DOOR_SLAM]     = { "door_slam",     sfx_door_slam,       -7.5f, 1, 1 },
     [SFX_DOOR_CREAK]    = { "door_creak",    sfx_door_creak,    -22.0f, 0, 1 },
     [SFX_CART_HIT]      = { "cart_hit",      sfx_cart_hit,       -11.0f, 1, 1 },
@@ -1432,6 +1559,10 @@ static const SfxDef defs[SFX_COUNT] = {
     [SFX_GAME_OVER]     = { "game_over",     sfx_game_over,       -9.0f, 1, 1 },
     [SFX_HEARTBEAT]     = { "heartbeat",     sfx_heartbeat,      -11.0f, 0, 1 },
     [SFX_PERK]          = { "perk",          sfx_perk,           -14.0f, 1, 1 },
+    [SFX_SPIT]          = { "spit",          sfx_spit,           -12.0f, 0, 2 },
+    [SFX_SPLAT]         = { "splat",         sfx_splat,          -14.0f, 0, 3 },
+    [SFX_LASH]          = { "lash",          sfx_lash,           -12.0f, 0, 2 },
+    [SFX_RUSTLE]        = { "rustle",        sfx_rustle,         -20.0f, 0, 3 },
 };
 
 static const char *defs_name(int id) { return au_sfx_name(id); }

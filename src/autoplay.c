@@ -3,6 +3,7 @@
 #include "gfx.h"
 #include "input.h"
 #include "game.h"
+#include "hub.h"
 
 bool g_autoplay;
 bool g_aim_override;
@@ -54,6 +55,7 @@ static int nearest_enemy(float range) {
         bool hostile = actor_hostile(0, i) || (a->br.state == AI_CHASE && a->br.target == 0);
         if (!hostile) continue;
         float d = v2_dist(a->pos, p->pos);
+        if (is_plant(a) && a->br.target != 0 && d > 60) continue;   /* weeds only when they're in the way */
         if (d < bd && los_clear(p->pos, a->pos, false)) { bd = d; best = i; }
     }
     return best;
@@ -61,11 +63,13 @@ static int nearest_enemy(float range) {
 
 static bool wants(ItemId id) {
     for (int i = 0; i < W.nlist; i++) if (W.list[i].id == id && !W.list[i].done) return true;
+    for (int i = 0; i < W.nfav; i++) if (W.fav[i].id == id && !W.fav[i].done) return true;   /* the camp's favours too */
     return false;
 }
 
 void autoplay_update(float dt) {
     if (!g_autoplay) return;
+    if (g_scene == SC_HUB) { hub_bot(dt); return; }
     /* menus: just keep pressing confirm */
     if (g_scene != SC_PLAY) {
         press_cd -= dt;
@@ -89,13 +93,17 @@ void autoplay_update(float dt) {
                 inv_capacity(p), p->cart, target_cont, lst);
         for (int i = 0; i < W.nlist; i++) {
             if (W.list[i].done) continue;
-            int inc = 0, carried = 0, floor = 0;
+            int inc = 0, carried = 0, floor = 0, carts = 0;
             for (int c = 0; c < W.nconts; c++)
                 for (int k = 0; k < W.conts[c].n; k++) if (W.conts[c].items[k].id == W.list[i].id) inc++;
             for (int a = 1; a < W.nactors; a++)
                 if (W.actors[a].alive) carried += inv_count(&W.actors[a], W.list[i].id);
             for (int k = 0; k < MAX_PICKUPS; k++) if (W.pickups[k].alive && W.pickups[k].st.id == W.list[i].id) floor++;
-            SDL_Log("   missing %s: containers %d, carried %d, floor %d", ITEMS[W.list[i].id].name, inc, carried, floor);
+            for (int c = 0; c < MAX_CARTS; c++)
+                for (int k = 0; W.carts[c].alive && k < W.carts[c].n; k++)
+                    if (W.carts[c].items[k].id == W.list[i].id && !cart_counts(&W.carts[c])) carts += W.carts[c].items[k].count;
+            SDL_Log("   missing %s: containers %d, carried %d, floor %d, carts left behind %d", ITEMS[W.list[i].id].name, inc, carried,
+                    floor, carts);
         }
     }
     g_aim_override = true;
@@ -182,15 +190,23 @@ void autoplay_update(float dt) {
         }
     }
     if (p->hp < p->maxhp - 2) IN.pressed[ACT_HEAL] = true;
-    /* bag nearly full: grab a shopping cart */
+    /* bag nearly full: grab a shopping cart - or, if the van's nearer and the bag holds list items, unload there */
     if (p->cart < 0 && inv_used(p) >= inv_capacity(p) - 1 && !W.list_done) {
         int best = -1;
-        float bd = 400;
+        float bd = 1e9f;   /* any cart beats standing around with a full bag */
         for (int i = 0; i < MAX_CARTS; i++) {
             Cart *c = &W.carts[i];
             if (!c->alive || c->holder >= 0) continue;
             float d = v2_dist(c->pos, p->pos);
             if (d < bd) { bd = d; best = i; }
+        }
+        V2 ex = v2(W.exit_rect.x + W.exit_rect.w / 2, W.exit_rect.y + W.exit_rect.h / 2);
+        if (van_loadable() && v2_dist(ex, p->pos) < bd) {
+            go(ex);
+            IN.move = steer();
+            g_aim_world = ex;
+            if (v2_dist(ex, p->pos) < 14 && press_cd <= 0) { IN.pressed[ACT_INTERACT] = true; press_cd = 0.5f; }
+            return;
         }
         if (best >= 0) {
             Cart *c = &W.carts[best];
@@ -217,7 +233,12 @@ void autoplay_update(float dt) {
         go(pk->pos);
         IN.move = steer();
         g_aim_world = pk->pos;
-        if (v2_dist(pk->pos, p->pos) < 14 && press_cd <= 0) { IN.pressed[ACT_INTERACT] = true; press_cd = 0.6f; }
+        if (v2_dist(pk->pos, p->pos) < 14 && press_cd <= 0) {
+            /* full bag: dump some junk, as a player would in the bag screen */
+            if (interact_pickup(p) != i) make_room(p, (ItemId)pk->st.id, pk->st.count);
+            if (p->cart < 0) IN.pressed[ACT_INTERACT] = true;   /* behind a cart, walking over it picks it up */
+            press_cd = 0.6f;
+        }
         return;
     }
     /* someone carries what we need: take it */
@@ -247,6 +268,7 @@ void autoplay_update(float dt) {
             float d = v2_dist(c->pos, p->pos) * (want ? 0.2f : 1.0f);
             if (d < bd) { bd = d; best = i; }
         }
+        if (best < 0 && nblack) nblack = 0;   /* ran out of targets: give the blacklisted ones another go */
         target_cont = best;
     }
     if (target_cont >= 0) {

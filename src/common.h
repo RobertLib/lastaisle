@@ -80,13 +80,15 @@ static inline Color color_lerp(Color a, Color b, float t) {
                 (int)lerpf(a.a, b.a, t));
 }
 
-/* Hotline-Miami flavoured accent colours (match art/palette.txt) */
+/* Accent colours: a dead supermarket's paperwork - price-tag yellow, clearance-sticker red,
+ * receipt paper, cardboard - plus the green that is taking it all back (match art/palette.txt) */
 #define TINT_NONE   rgb(255, 255, 255)
 #define COL_WHITE   rgb(251, 248, 242)
 #define COL_BLACK   rgb(11, 10, 16)
-#define COL_PINK    rgb(255, 95, 149)
-#define COL_MAGENTA rgb(192, 29, 98)
-#define COL_CYAN    rgb(98, 236, 208)
+#define COL_TAG     rgb(240, 74, 44)
+#define COL_RECEIPT rgb(238, 232, 216)
+#define COL_KRAFT   rgb(222, 184, 135)
+#define COL_AMBER   rgb(255, 176, 92)
 #define COL_YELLOW  rgb(255, 212, 71)
 #define COL_ORANGE  rgb(255, 140, 46)
 #define COL_RED     rgb(232, 41, 63)

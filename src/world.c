@@ -430,7 +430,30 @@ static void shatter(Pickup *p, bool molotov) {
     p->alive = false;
 }
 
+/* a pile spreads out a little until nothing lies on top of something else - every item shows, and you can point at it */
+#define PILE_GAP 10.0f
+static void pickups_spread(float dt) {
+    int rest[MAX_PICKUPS], n = 0;
+    for (int i = 0; i < MAX_PICKUPS; i++) {
+        Pickup *p = &W.pickups[i];
+        if (p->alive && !p->flying && p->fuse <= 0) rest[n++] = i;
+    }
+    for (int a = 0; a < n; a++)
+        for (int b = a + 1; b < n; b++) {
+            Pickup *p = &W.pickups[rest[a]], *q = &W.pickups[rest[b]];
+            V2 d = v2_sub(q->pos, p->pos);
+            float l2 = v2_len2(d);
+            if (l2 >= PILE_GAP * PILE_GAP) continue;
+            float l = sqrtf(l2);
+            V2 n2 = l > 0.01f ? v2_scale(d, 1 / l) : v2_angle(rest[b] * 2.39996f);   /* right on top: a fixed way apart */
+            V2 push = v2_scale(n2, 260 * (1 - l / PILE_GAP) * dt);
+            p->vel = v2_sub(p->vel, push);
+            q->vel = v2_add(q->vel, push);
+        }
+}
+
 static void pickups_update(float dt) {
+    pickups_spread(dt);
     for (int i = 0; i < MAX_PICKUPS; i++) {
         Pickup *p = &W.pickups[i];
         if (!p->alive) continue;
@@ -594,6 +617,26 @@ static void van_bay_draw(void) {
         else if (i < 2 * w + h) { x = x0 + w - (i - w - h); y = y0 + h; }
         else { x = x0; y = y0 + h - (i - 2 * w - h); horiz = false; }
         gfx_fill(x, y, horiz ? 1 : 2, horiz ? 2 : 1, c);
+    }
+}
+
+static int prompt_pk = -1;   /* the floor item the prompt offers: marked in the world */
+
+/* the floor item [E] would take: corner brackets round it, so in a pile you see which one your hand's on */
+static void pick_marker_draw(void) {
+    if (prompt_pk < 0 || !W.pickups[prompt_pk].alive) return;
+    Pickup *p = &W.pickups[prompt_pk];
+    ItemId id = (ItemId)p->st.id;
+    bool weapon = item_is_weapon(id) && item_weapon(id)->spr >= 0;
+    const AtlasSprite *a = &g_atlas[weapon ? item_weapon(id)->spr : ITEMS[id].spr];
+    float cx = floorf(p->pos.x), cy = floorf(p->pos.y - (weapon ? 0 : 2));
+    float r = floorf(MINF(10, MAXF(a->w, a->h) * (weapon ? 0.4f : 0.5f)) + 2 + (sinf(W.time * 8) > 0 ? 1 : 0));
+    Color c = is_list_item(id) ? COL_YELLOW : COL_WHITE;
+    for (int k = 0; k < 4; k++) {
+        float sx = (k & 1) ? 1 : -1, sy = (k & 2) ? 1 : -1;
+        float x = cx + sx * r, y = cy + sy * r;
+        gfx_fill(sx > 0 ? x - 2 : x, y, 3, 1, c);
+        gfx_fill(x, sy > 0 ? y - 2 : y, 1, 3, c);
     }
 }
 
@@ -1503,6 +1546,7 @@ static void world_begin(void) {
     actor_reset_level_state();
     hud_reset_level_state();
     prompt_buf[0] = 0;
+    prompt_pk = -1;
     for (int i = 0; i < MAX_DOORS; i++) W.doors[i].len = 15;
     W.timescale = 1;
     W.boss = -1;
@@ -1591,6 +1635,7 @@ const char *world_prompt(V2 *pos) {
 static void update_prompt(void) {
     Actor *p = player();
     prompt_buf[0] = 0;
+    prompt_pk = -1;
     if (!p->alive || W.exiting) return;
     prompt_pos = v2(p->pos.x, p->pos.y + 14);
     if (p->exec_t > 0) return;
@@ -1600,7 +1645,7 @@ static void update_prompt(void) {
         SDL_snprintf(prompt_buf, sizeof prompt_buf, "^y[%s]^0 Execute", ctl("SPACE", "X"));
         return;
     }
-    if (!W.hub && in_exit(p->pos)) {
+    if (!W.hub && in_exit(p->pos) && (W.list_done || p->cart >= 0 || van_loadable() || interact_pickup(p) < 0)) {
         if (W.list_done) SDL_snprintf(prompt_buf, sizeof prompt_buf, "^y[%s]^0 Drive home", KEY_USE);
         else if (p->cart >= 0) SDL_snprintf(prompt_buf, sizeof prompt_buf, "^kThe list isn't done.  ^y[%s]^0 Let go", KEY_USE);
         else if (van_loadable()) SDL_snprintf(prompt_buf, sizeof prompt_buf, "^kThe list isn't done.  ^y[%s]^0 Load the van", KEY_USE);
@@ -1618,6 +1663,10 @@ static void update_prompt(void) {
         return;
     }
     int pk = interact_pickup(p);
+    int here = floor_items(p, NULL, 0);
+    /* a pile: the bag screen lays it all out */
+    char more[32] = "";
+    if (here > 1) SDL_snprintf(more, sizeof more, "  ^y[%s]^0 See all %d", ctl("TAB", "BACK"), here);
     if (pk >= 0) {
         ItemId id = (ItemId)W.pickups[pk].st.id;
         const char *verb = "Pick up";
@@ -1629,7 +1678,12 @@ static void update_prompt(void) {
                 if (!s->id || (s->id == id && s->count < ITEMS[id].stack)) verb = "Take";
             }
         }
-        SDL_snprintf(prompt_buf, sizeof prompt_buf, "^y[%s]^0 %s %s", KEY_USE, verb, ITEMS[id].name);
+        SDL_snprintf(prompt_buf, sizeof prompt_buf, "^y[%s]^0 %s %s%s", KEY_USE, verb, ITEMS[id].name, more);
+        prompt_pk = pk;
+        return;
+    }
+    if (here > 1) {
+        SDL_snprintf(prompt_buf, sizeof prompt_buf, "^kNo room.%s", more);
         return;
     }
     if (g_search_cont >= 0) return;
@@ -1992,6 +2046,7 @@ void world_draw(void) {
         gfx_glow(r.x + r.w / 2, r.y + r.h / 2, 40, COL_GREEN, 0.3f * k);
     }
     van_bay_arrow();
+    pick_marker_draw();
     /* search progress ring */
     if (g_search_cont >= 0 && g_search_progress > 0) {
         Container *c = &W.conts[g_search_cont];

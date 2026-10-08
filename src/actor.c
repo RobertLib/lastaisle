@@ -625,25 +625,62 @@ static bool can_collect(Actor *p, Pickup *pk) {
     return item_needed(id) && room_possible(p, pk->st);
 }
 
-static int nearest_pickup(Actor *p, float r, bool weapons) {
+/* lying within arm's reach: not in the air, not a lit fuse, nothing in between */
+static bool in_reach(Actor *p, Pickup *pk) {
+    return pk->alive && !pk->flying && pk->fuse <= 0 && v2_dist2(pk->pos, p->pos) < PICK_REACH * PICK_REACH &&
+           reach_clear(p->pos, pk->pos);
+}
+
+/* where your hand goes: the cursor (pulled in to arm's length), else the way you aim or face */
+static V2 reach_point(Actor *p) {
+    extern bool g_aim_override;
+    extern V2 g_aim_world;
+    V2 d = v2_scale(v2_angle(p->aim), PICK_REACH * 0.6f);
+    if (!IN.pad_active || g_aim_override) {
+        d = v2_sub(g_aim_override ? g_aim_world : gfx_screen_to_world(IN.mouse_screen.x, IN.mouse_screen.y), p->pos);
+        float l = v2_len(d);
+        if (l > PICK_REACH) d = v2_scale(d, PICK_REACH / l);
+    }
+    return v2_add(p->pos, d);
+}
+
+/* of what's within reach and would actually fit, the one nearest your hand - point at the one you want.
+   Junk you can't carry never eats [E] */
+int interact_pickup(Actor *p) {
+    V2 at = reach_point(p);
     int best = -1;
-    float bd = r * r;
+    float bd = 1e18f;
     for (int i = 0; i < MAX_PICKUPS; i++) {
         Pickup *pk = &W.pickups[i];
-        if (!pk->alive || pk->flying || pk->fuse > 0) continue;
-        if ((ITEMS[pk->st.id].cat == CAT_WEAPON) != weapons) continue;
-        float d = v2_dist2(pk->pos, p->pos);
-        if (d >= bd || !can_collect(p, pk) || !reach_clear(p->pos, pk->pos)) continue;
-        bd = d;
-        best = i;
+        if (!in_reach(p, pk) || !can_collect(p, pk)) continue;
+        float d = v2_dist2(pk->pos, at);
+        if (d < bd) { bd = d; best = i; }
     }
     return best;
 }
 
-/* weapons within reach first, then anything else that would actually fit - junk you can't carry never eats [E] */
-int interact_pickup(Actor *p) {
-    int pk = nearest_pickup(p, 18, true);
-    return pk >= 0 ? pk : nearest_pickup(p, 16, false);
+/* everything lying within reach, oldest first (what you drop joins the end) - the bag screen's floor panel.
+   Fills up to max, returns how many there are */
+int floor_items(Actor *p, int *out, int max) {
+    int all[MAX_PICKUPS], n = 0;
+    for (int i = 0; i < MAX_PICKUPS; i++) {
+        Pickup *pk = &W.pickups[i];
+        if (!in_reach(p, pk)) continue;
+        int k = n++;
+        while (k > 0 && W.pickups[all[k - 1]].age < pk->age) { all[k] = all[k - 1]; k--; }
+        all[k] = i;
+    }
+    for (int k = 0; k < n && k < max; k++) out[k] = all[k];
+    return n;
+}
+
+/* a weapon off the floor: a free slot takes it (in hand); with every slot full it takes the place of the one in your hands */
+void pickup_take_weapon(Actor *p, int pi) {
+    Pickup *pp = &W.pickups[pi];
+    Stack old = weapon_take(p, &pp->st);
+    if (pp->st.count <= 0) pp->alive = false;
+    if (old.id) pickup_spawn(old, p->pos, v2(frange(-30, 30), frange(-30, 30)));
+    audio_play(SFX_PICKUP_WEAPON, 0.8f, 0, 1);
 }
 
 /* the downed enemy [SPACE] finishes: close, and not through a door or a wall */
@@ -665,7 +702,7 @@ static const char *bag_full_hint(void) {
                "Bag is full. Drop something [BACK], grab a cart or unload at the van.");
 }
 
-static void collect_pickup(Actor *p, int pi) {
+void pickup_collect(Actor *p, int pi) {
     Pickup *pk = &W.pickups[pi];
     ItemId id = (ItemId)pk->st.id;
     const ItemDef *it = &ITEMS[id];
@@ -895,8 +932,9 @@ void player_update(Actor *p, float dt) {
             }
         }
         if (!done && !W.hub) {
-            /* exit - or, the list not done yet, load what you have of it into the van and go back for the rest */
-            if (in_exit(p->pos)) {
+            /* exit - or, the list not done yet, load what you have of it into the van and go back for the rest
+               (nothing for the van yet: [E] is for the thing on the ground you're reaching for) */
+            if (in_exit(p->pos) && (W.list_done || van_loadable() || interact_pickup(p) < 0)) {
                 list_recount();   /* judge what's here now, not a quarter-second-old tally */
                 int loaded = W.list_done ? 0 : van_load_bag();
                 if (W.list_done) {
@@ -921,15 +959,10 @@ void player_update(Actor *p, float dt) {
             /* deliberately pick up an item lying here (e.g. one you dropped) - only offered if it fits */
             W.pickups[pk].dropped = false;
             W.pickups[pk].age = 1;
-            collect_pickup(p, pk);
+            pickup_collect(p, pk);
             done = true;
         } else if (pk >= 0) {
-            /* a free slot takes it (in hand); with every slot full it takes the place of the one in your hands */
-            Pickup *pp = &W.pickups[pk];
-            Stack old = weapon_take(p, &pp->st);
-            if (pp->st.count <= 0) pp->alive = false;
-            if (old.id) pickup_spawn(old, p->pos, v2(frange(-30, 30), frange(-30, 30)));
-            audio_play(SFX_PICKUP_WEAPON, 0.8f, 0, 1);
+            pickup_take_weapon(p, pk);
             done = true;
         }
         if (!done) {
@@ -961,8 +994,7 @@ void player_update(Actor *p, float dt) {
             /* nothing else to do here, but something on the floor that won't fit: say why */
             for (int i = 0; i < MAX_PICKUPS; i++) {
                 Pickup *pk = &W.pickups[i];
-                if (!pk->alive || pk->flying || pk->fuse > 0 || ITEMS[pk->st.id].cat == CAT_WEAPON) continue;
-                if (v2_dist2(pk->pos, p->pos) >= 16 * 16 || !reach_clear(p->pos, pk->pos)) continue;
+                if (!in_reach(p, pk) || ITEMS[pk->st.id].cat == CAT_WEAPON) continue;
                 audio_play(SFX_UI_ERROR, 0.5f, 0, 1);
                 world_hint(ITEMS[pk->st.id].cat == CAT_BAG ? "Your bag is already bigger." : bag_full_hint());
                 break;
@@ -974,7 +1006,7 @@ void player_update(Actor *p, float dt) {
         Pickup *pk = &W.pickups[i];
         if (!pk->alive || pk->flying || pk->age < 0.35f || pk->dropped) continue;
         if (ITEMS[pk->st.id].cat == CAT_WEAPON) continue;
-        if (v2_dist2(pk->pos, p->pos) < 12 * 12 && reach_clear(p->pos, pk->pos)) collect_pickup(p, i);
+        if (v2_dist2(pk->pos, p->pos) < 12 * 12 && reach_clear(p->pos, pk->pos)) pickup_collect(p, i);
     }
     W.loot_cd -= dt;
 }

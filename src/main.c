@@ -37,6 +37,7 @@ static bool dbg_favours;   /* --favours: the favours of the stores before were b
 static int dbg_crew = -1;  /* --crew N: the first N living of the crew are asked along (up to the store's limit) */
 static int dbg_fallen;     /* --fallen N: the first N of the crew died in the store before */
 static bool dbg_armed;     /* --armed: every weapon slot full */
+static bool dbg_pile;      /* --pile: a heap of things dropped right at your feet, all in one spot */
 static float dbg_cut_t;
 extern bool g_autoplay;
 void autoplay_update(float dt);
@@ -356,6 +357,21 @@ static void debug_armed(void) {
     if (RUN.ninv < INV_MAX) RUN.inv[RUN.ninv++] = (Stack){IT_AMMO9, 24, 0, 0};
 }
 
+/* --pile: weapons, junk and something off the list, all on one spot at your feet (dropped: E or the bag screen takes them) */
+static void debug_pile(void) {
+    Actor *p = player();
+    Stack heap[] = {
+        {IT_BAT, 1, (int16_t)WEAPONS[W_BAT].durability, 0}, {IT_PISTOL, 1, 5, 0}, {IT_KNIFE, 1, (int16_t)WEAPONS[W_KNIFE].durability, 0},
+        {IT_DUCTTAPE, 1, 0, 0}, {IT_RAG, 2, 0, 0}, {IT_BANDAGE, 1, 0, 0}, {IT_BOTTLE, 1, 0, 0},
+        {W.nlist ? W.list[0].id : IT_AMMO9, 1, 0, 0},
+    };
+    for (int k = 0; k < (int)ARRAY_LEN(heap); k++) {
+        int pi = pickup_spawn(heap[k], p->pos, v2(0, 0));
+        if (pi >= 0) W.pickups[pi].dropped = true;
+    }
+    SDL_Log("PILE: %d things at %.0f,%.0f", (int)ARRAY_LEN(heap), p->pos.x, p->pos.y);
+}
+
 /* ----------------------------------------------------------------- main */
 static void parse_args(int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
@@ -378,6 +394,7 @@ static void parse_args(int argc, char **argv) {
         else if (!strcmp(argv[i], "--hub-level") && i + 1 < argc) dbg_level_hub = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--favours")) dbg_favours = true;
         else if (!strcmp(argv[i], "--armed")) dbg_armed = true;
+        else if (!strcmp(argv[i], "--pile")) dbg_pile = true;
         else if (!strcmp(argv[i], "--crew") && i + 1 < argc) dbg_crew = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--fallen") && i + 1 < argc) { int n = atoi(argv[++i]); dbg_fallen = CLAMP(n, 0, MAX_CREW); }
     }
@@ -422,6 +439,7 @@ int main(int argc, char **argv) {
         if (dbg_armed) debug_armed();
         debug_crew();
         start_level();
+        if (dbg_pile) debug_pile();
         if (dbg_mapshot) { world_mapshot(dbg_mapshot); return 0; }
         if (dbg_complete) {
             W.kills = 9; W.score = 4350; W.max_combo = 4; W.time = 94; W.weapons_used = 0x2D;
@@ -441,6 +459,7 @@ int main(int argc, char **argv) {
         if (dbg_armed) debug_armed();
         debug_crew();
         scene_set((Scene)dbg_scene);
+        if (dbg_pile && g_scene == SC_HUB) debug_pile();
         if (dbg_mapshot && g_scene == SC_HUB) { world_mapshot(dbg_mapshot); return 0; }
     } else {
         scene_set(SC_TITLE);
@@ -505,7 +524,7 @@ int main(int argc, char **argv) {
             }
         }
         frame++;
-        if (dbg_inv && dbg_frames && frame == dbg_frames - 3 && g_scene == SC_PLAY) { g_autoplay = false; g_inventory_open = true; }
+        if (dbg_inv && dbg_frames && frame == dbg_frames - 3 && (g_scene == SC_PLAY || g_scene == SC_HUB)) { g_autoplay = false; g_inventory_open = true; }
         bool last_frame = dbg_frames && frame >= dbg_frames;
         if (last_frame && dbg_shot) G.capture_path = dbg_shot;
         gfx_present();

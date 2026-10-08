@@ -21,6 +21,10 @@ then make it back to your van alive.
 * **Shopping lists** with must-have items and bonus loot. Your bag is small; shopping carts
   hold much more (search shelves straight into the basket) and make a great battering ram.
   Other scavengers shop too — and they'll take the last can of beans if you're slow.
+* **Take exactly what you want.** A heap on the floor spreads out until nothing hides under anything else.
+  Within reach, [E] takes the one you point at - corner brackets show which - not just the nearest. The bag
+  screen lays out everything within reach on the floor, one slot a thing: take any of it, send it straight into
+  the cart or the van, or drop something from the bag first to make room.
 * **Unload at the van, or carry it all?** Halfway through the list with a full bag, you can drop what you
   have of it into the van (the dashed bay beside it lights up when you've something for it) and go back
   for the rest. It counts, and it goes home with you — but nobody's
@@ -103,6 +107,7 @@ then make it back to your van alive.
 | Attack / shoot | Left mouse | RT |
 | Throw weapon | Right mouse | LT |
 | Search / take / talk / push cart / load the van / leave | E | A |
+| Choose what to take from a heap | Point at it (or Tab: all of it in the bag screen) | Right stick (or Back) |
 | Execute downed enemy | Space | X |
 | Look further | Shift | L3 |
 | Bag & crafting | Tab / I | Back |
@@ -174,7 +179,8 @@ game), `--mapshot out.png` (render a whole generated level), `--frames N --shot 
 `--favours` (with `--scene` or `--level`: the favours of the earlier stores are in your bag to hand over, this store's are asked),
 `--crew N` (with `--scene` or `--level`: the first N of the crew still living are asked along, up to the store's limit),
 `--fallen N` (the first N of the crew died in the store before),
-`--armed` (with `--scene` or `--level`: every weapon slot full - the bat, a pistol with rounds, three molotovs). Debug runs never
+`--armed` (with `--scene` or `--level`: every weapon slot full - the bat, a pistol with rounds, three molotovs),
+`--pile` (with `--scene` or `--level`: weapons, junk and a list item dropped on one spot at your feet). Debug runs never
 touch your saves; add `--prefdir DIR` to have them read and write saves and settings in `DIR` instead.
 
 Saves and settings live in the platform's user data folder (`SDL_GetPrefPath`). Runs are saved at

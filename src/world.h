@@ -171,6 +171,7 @@ typedef struct {
 
 /* ========================================================== dynamics */
 #define MAX_PICKUPS 384
+#define PICK_REACH 22.0f    /* how far you reach for something on the floor */
 typedef struct {
     bool alive;
     Stack st;
@@ -492,6 +493,9 @@ bool cart_counts(const Cart *c);    /* this cart's load counts towards the list 
 int craft_have(Actor *a, ItemId id);   /* units crafting may use (shopping-list items the list still needs are kept) */
 bool craft_list_blocked(Actor *a, const Recipe *r);  /* would have the ingredients, but they're on the list */
 int interact_pickup(Actor *p);     /* the floor item [E] would take right now, or -1 */
+int floor_items(Actor *p, int *out, int max);   /* what lies within reach, oldest first; returns how many */
+void pickup_take_weapon(Actor *p, int pi);      /* a floor weapon into your slots (the one it replaces drops) */
+void pickup_collect(Actor *p, int pi);          /* a floor item into the bag / the cart you push / on your back (a bag) */
 int execute_target(Actor *p);      /* the downed enemy [SPACE] would finish, or -1 */
 
 /* ========================================================= ai.c */

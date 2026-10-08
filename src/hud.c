@@ -512,9 +512,9 @@ void hud_draw(void) {
 }
 
 /* ======================================================= inventory screen */
-typedef enum { FOC_HANDS, FOC_BAG, FOC_STORE, FOC_CRAFT } Focus;
+typedef enum { FOC_HANDS, FOC_BAG, FOC_STORE, FOC_FLOOR, FOC_CRAFT } Focus;
 static Focus foc = FOC_BAG;
-static int sel_bag, sel_store, sel_craft, sel_hand;   /* sel_hand: a weapon slot */
+static int sel_bag, sel_store, sel_floor, sel_craft, sel_hand;   /* sel_hand: a weapon slot */
 static char inv_msg[64];
 static float inv_msg_t;
 
@@ -541,6 +541,23 @@ static void store_find(void) {
     }
     int c = p->cart >= 0 ? p->cart : cart_near(p->pos, 40);
     if (c >= 0) st = (Store){W.carts[c].items, &W.carts[c].n, CART_CAP, ARRAY_LEN(W.carts[c].items), "CART", W.carts[c].pos};
+}
+
+/* what lies on the floor within reach, one slot a thing: under the cart / van / locker, or in their place */
+#define FLOOR_SLOTS 24
+static int flr[FLOOR_SLOTS];
+static int nflr, flr_show;   /* how many lie there, how many fit the panel */
+static float flr_y;          /* top of its grid */
+
+static void floor_find(void) {
+    int slots = FLOOR_SLOTS;
+    flr_y = 66;
+    if (st.items) {
+        flr_y = 66 + (st.slots + 3) / 4 * 26 + 10;
+        slots = MINF(FLOOR_SLOTS, (int)((232 - flr_y) / 26) * 4);
+    }
+    nflr = floor_items(player(), flr, slots);
+    flr_show = MINF(nflr, slots);
 }
 
 static int store_used(void) {
@@ -644,11 +661,44 @@ static void store_primary(int k) {
     audio_play(SFX_PICKUP, 0.9f, 0, 1);
 }
 
+/* take it off the floor: a weapon in hand (or on your back), a bigger bag on your back, anything else in the bag */
+static void floor_take(int k) {
+    if (k < 0 || k >= flr_show) return;
+    Actor *p = player();
+    Pickup *pk = &W.pickups[flr[k]];
+    ItemId id = (ItemId)pk->st.id;
+    if (ITEMS[id].cat == CAT_WEAPON) { pickup_take_weapon(p, flr[k]); return; }
+    if (ITEMS[id].cat == CAT_BAG) {
+        if (bag_capacity(id) > bag_capacity(RUN.bag)) pickup_collect(p, flr[k]);
+        else { inv_note("Your bag is already bigger."); audio_play(SFX_UI_ERROR, 0.5f, 0, 1); }
+        return;
+    }
+    if (!inv_add(p, pk->st)) {
+        inv_note(ctl("No room in the bag. Drop something [R].", "No room in the bag. Drop something [RB]."));
+        audio_play(SFX_UI_ERROR, 0.5f, 0, 1);
+        return;
+    }
+    pk->alive = false;
+    audio_play(SFX_PICKUP, 0.9f, 0, 1);
+}
+
+/* [Q]: off the floor straight into the cart / van / locker */
+static void floor_to_store(int k) {
+    if (!st.items || k < 0 || k >= flr_show) return;
+    Pickup *pk = &W.pickups[flr[k]];
+    if (!store_put(pk->st)) { store_full(); return; }
+    pk->alive = false;
+    audio_play(SFX_CART_ROLL, 0.6f, 0, 1.2f);
+}
+
 void inventory_update(float dt) {
     Actor *p = player();
     inv_msg_t -= dt;
     store_find();
-    if (!st.items && foc == FOC_STORE) foc = FOC_BAG;
+    floor_find();
+    if (foc == FOC_STORE && !st.items) foc = flr_show ? FOC_FLOOR : FOC_BAG;
+    if (foc == FOC_FLOOR && !flr_show) foc = st.items ? FOC_STORE : FOC_BAG;
+    sel_floor = CLAMP(sel_floor, 0, MAXF(0, flr_show - 1));
     if (IN.pressed[ACT_INVENTORY] || IN.pressed[ACT_BACK]) {
         g_inventory_open = false;
         audio_play(SFX_UI_BACK, 0.85f, 0, 1);
@@ -656,13 +706,26 @@ void inventory_update(float dt) {
         return;
     }
     /* keyboard navigation */
+    /* bag | cart, van or locker over the floor | crafting, left to right */
+    Focus mid = st.items ? FOC_STORE : flr_show ? FOC_FLOOR : FOC_CRAFT;
     if (IN.repeat[ACT_MENU_LEFT] || IN.repeat[ACT_MENU_RIGHT]) {
         int dir = IN.repeat[ACT_MENU_RIGHT] ? 1 : -1;
+        int *sel = foc == FOC_STORE ? &sel_store : &sel_floor, n = foc == FOC_STORE ? st.slots : flr_show;
+        int flr_row = (int)((flr_y - 66 + 13) / 26);   /* the bag row level with the floor's first */
         if (foc == FOC_BAG) {
-            if ((sel_bag % 4 == 3 && dir > 0)) foc = FOC_CRAFT;
-            else sel_bag = CLAMP(sel_bag + dir, 0, 23);
-        } else if (foc == FOC_CRAFT && dir < 0) foc = FOC_BAG;
-        else if (foc == FOC_STORE) sel_store = CLAMP(sel_store + dir, 0, st.slots - 1);
+            if (sel_bag % 4 == 3 && dir > 0) {
+                foc = mid;
+                if (mid == FOC_STORE) sel_store = CLAMP(sel_bag / 4, 0, (st.slots - 1) / 4) * 4;
+                if (mid == FOC_FLOOR) sel_floor = CLAMP(sel_bag / 4 - flr_row, 0, (flr_show - 1) / 4) * 4;
+            } else sel_bag = CLAMP(sel_bag + dir, 0, 23);
+        } else if (foc == FOC_CRAFT && dir < 0) foc = mid == FOC_CRAFT ? FOC_BAG : mid;
+        else if (foc == FOC_STORE || foc == FOC_FLOOR) {
+            if (dir < 0 && *sel % 4 == 0) {
+                sel_bag = MINF(*sel / 4 + (foc == FOC_FLOOR ? flr_row : 0), 5) * 4 + 3;
+                foc = FOC_BAG;
+            } else if (dir > 0 && (*sel % 4 == 3 || *sel + 1 >= n)) foc = FOC_CRAFT;
+            else *sel += dir;
+        }
         else if (foc == FOC_HANDS) sel_hand = CLAMP(sel_hand + dir, 0, WSLOTS - 1);
         audio_play(SFX_UI_MOVE, 0.75f, 0, 1);
     }
@@ -671,10 +734,21 @@ void inventory_update(float dt) {
         if (foc == FOC_CRAFT) sel_craft = (sel_craft + dir + NUM_RECIPES) % NUM_RECIPES;
         else if (foc == FOC_BAG) {
             if (dir < 0 && sel_bag < 4) { foc = FOC_HANDS; sel_hand = MINF(sel_bag, WSLOTS - 1); }
-            else if (dir > 0 && sel_bag + 4 > 23 && st.items) foc = FOC_STORE;
+            else if (dir > 0 && sel_bag + 4 > 23 && mid != FOC_CRAFT) foc = mid;
             else sel_bag = CLAMP(sel_bag + dir * 4, 0, 23);
         } else if (foc == FOC_HANDS && dir > 0) { foc = FOC_BAG; sel_bag = sel_hand; }
-        else if (foc == FOC_STORE && dir < 0) foc = FOC_BAG;
+        else if (foc == FOC_STORE) {
+            if (dir < 0 && sel_store < 4) foc = FOC_BAG;
+            else if (dir > 0 && sel_store + 4 >= st.slots) { if (flr_show) { foc = FOC_FLOOR; sel_floor = MINF(sel_store % 4, flr_show - 1); } }
+            else sel_store += dir * 4;
+        } else if (foc == FOC_FLOOR) {
+            if (dir < 0 && sel_floor < 4) {
+                if (st.items) { foc = FOC_STORE; sel_store = st.slots - 4 + sel_floor % 4; }
+                else foc = FOC_BAG;
+            } else if (dir > 0 && sel_floor + 4 >= flr_show) {
+                if (sel_floor / 4 < (flr_show - 1) / 4) sel_floor = flr_show - 1;   /* a short last row */
+            } else sel_floor += dir * 4;
+        }
         audio_play(SFX_UI_MOVE, 0.75f, 0, 1);
     }
     bool act = IN.pressed[ACT_CONFIRM] || IN.pressed[ACT_INTERACT];
@@ -696,6 +770,10 @@ void inventory_update(float dt) {
                 float x = 136 + (k % 4) * 26, y = by + (k / 4) * 26;
                 if (m.x >= x && m.x < x + 24 && m.y >= y && m.y < y + 24) { foc = FOC_STORE; sel_store = k; hit = true; }
             }
+        for (int k = 0; k < flr_show; k++) {
+            float x = 136 + (k % 4) * 26, y = flr_y + (k / 4) * 26;
+            if (m.x >= x && m.x < x + 24 && m.y >= y && m.y < y + 24) { foc = FOC_FLOOR; sel_floor = k; hit = true; }
+        }
         for (int r = 0; r < NUM_RECIPES; r++) {
             float y = 34 + r * 14;
             if (m.x >= 252 && m.x < 470 && m.y >= y - 1 && m.y < y + 13) { foc = FOC_CRAFT; sel_craft = r; hit = true; }
@@ -709,6 +787,7 @@ void inventory_update(float dt) {
     if (move) {
         if (foc == FOC_BAG) bag_to_store(sel_bag);
         else if (foc == FOC_STORE) store_primary(sel_store);
+        else if (foc == FOC_FLOOR) floor_to_store(sel_floor);
         else if (foc == FOC_HANDS && hand->id) {
             if (store_put(*hand)) { weapon_slot_remove(p, sel_hand); audio_play(SFX_PICKUP_WEAPON, 0.6f, 0, 0.9f); }
             else store_full();
@@ -726,6 +805,7 @@ void inventory_update(float dt) {
             break;
         case FOC_BAG: bag_primary(sel_bag); break;
         case FOC_STORE: store_primary(sel_store); break;
+        case FOC_FLOOR: floor_take(sel_floor); break;
         case FOC_CRAFT: {
             const Recipe *r = &RECIPES[sel_craft];
             if (craft(p, r)) {
@@ -787,6 +867,7 @@ static void stack_desc(const Stack *s, char *buf, int n) {
 void inventory_draw(void) {
     Actor *p = player();
     if (!st.items) store_find();
+    floor_find();
     gfx_fill(0, 0, VIEW_W, VIEW_H, rgba(11, 10, 16, 228));
     gfx_text(FONT_BIG, "BAG", 24, 10, COL_YELLOW, TXT_SHADOW);
     char buf[160];
@@ -814,6 +895,17 @@ void inventory_draw(void) {
         for (int k = 0; k < st.slots; k++) {
             Stack *s = k < *st.n ? &st.items[k] : NULL;
             slot(136 + (k % 4) * 26, by + (k / 4) * 26, s, foc == FOC_STORE && sel_store == k, s && on_list((ItemId)s->id));
+        }
+    }
+    /* what's on the floor round your feet, one slot a thing */
+    if (flr_show) {
+        const char *where = W.hub ? "GROUND" : "FLOOR";
+        if (nflr > flr_show) SDL_snprintf(buf, sizeof buf, "%s  ^k+%d more", where, nflr - flr_show);
+        else SDL_snprintf(buf, sizeof buf, "%s", where);
+        gfx_text(FONT_SMALL, buf, 136, flr_y - 10, COL_KRAFT, 0);
+        for (int k = 0; k < (flr_show + 3) / 4 * 4; k++) {
+            Stack *s = k < flr_show ? &W.pickups[flr[k]].st : NULL;
+            slot(136 + (k % 4) * 26, flr_y + (k / 4) * 26, s, foc == FOC_FLOOR && sel_floor == k, s && on_list((ItemId)s->id));
         }
     }
     /* crafting */
@@ -853,6 +945,7 @@ void inventory_draw(void) {
     if (foc == FOC_BAG && sel_bag < p->ninv) ds = &p->inv[sel_bag];
     if (foc == FOC_HANDS && weapon_slot(p, sel_hand)->id) ds = weapon_slot(p, sel_hand);
     if (foc == FOC_STORE && st.items && sel_store < *st.n) ds = &st.items[sel_store];
+    if (foc == FOC_FLOOR && sel_floor < flr_show) ds = &W.pickups[flr[sel_floor]].st;
     if (ds) {
         title = ITEMS[ds->id].name;
         stack_desc(ds, buf, sizeof buf);
@@ -869,6 +962,12 @@ void inventory_draw(void) {
         help = ctl("^yLMB/E^0 use/equip  ^yQ^0 bag/van  ^yRMB/R^0 drop  ^yTAB^0 close", "^yA^0 use/equip  ^yY^0 bag/van  ^yRB^0 drop  ^yB^0 close");
     if (foc == FOC_CRAFT) help = ctl("^yLMB/E^0 craft  ^yTAB^0 close", "^yA^0 craft  ^yB^0 close");
     char hbuf[128];
+    if (foc == FOC_FLOOR) {
+        const char *into = !st.items ? NULL : !strcmp(st.name, "CART") ? "cart" : !strcmp(st.name, "VAN") ? "van" : "locker";
+        if (IN.pad_active) SDL_snprintf(hbuf, sizeof hbuf, into ? "^yA^0 take  ^yY^0 into the %s  ^yB^0 close" : "^yA^0 take  ^yB^0 close", into);
+        else SDL_snprintf(hbuf, sizeof hbuf, into ? "^yLMB/E^0 take  ^yQ^0 into the %s  ^yTAB^0 close" : "^yLMB/E^0 take  ^yTAB^0 close", into);
+        help = hbuf;
+    }
     if (foc == FOC_HANDS) {
         const char *what = sel_hand != p->wslot ? "in hand" : "into the bag";
         if (IN.pad_active) SDL_snprintf(hbuf, sizeof hbuf, "^yA^0 %s  ^yRB^0 drop  ^yB^0 close", what);

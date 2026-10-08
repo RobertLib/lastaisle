@@ -36,6 +36,7 @@ static int dbg_level_hub = -1;   /* --hub-level N: which evening --scene 12 (the
 static bool dbg_favours;   /* --favours: the favours of the stores before were brought home, this store's were asked */
 static int dbg_crew = -1;  /* --crew N: the first N living of the crew are asked along (up to the store's limit) */
 static int dbg_fallen;     /* --fallen N: the first N of the crew died in the store before */
+static bool dbg_armed;     /* --armed: every weapon slot full */
 static float dbg_cut_t;
 extern bool g_autoplay;
 void autoplay_update(float dt);
@@ -130,7 +131,7 @@ void stats_save(void) {
     save_commit(f, "stats.cfg");
 }
 
-#define RUN_MAGIC 0x4C415335u /* "LAS5" */
+#define RUN_MAGIC 0x4C415336u /* "LAS6" */
 
 static int save_state = -1;      /* cached: -1 unknown, 0 no usable save, 1 valid save on disk */
 static int rogue_saved_hp;       /* hp written by the last save of the current store */
@@ -147,6 +148,9 @@ static bool run_valid(const Run *r) {
     if (r->ninv < 0 || r->ninv > INV_MAX) return false;
     for (int i = 0; i < r->ninv; i++) if (!stack_ok(&r->inv[i])) return false;
     if (!weapon_ok(&r->weapon)) return false;
+    if (r->wslot < 0 || r->wslot >= WSLOTS || r->snap_wslot < 0 || r->snap_wslot >= WSLOTS) return false;
+    for (int k = 0; k < WSLOTS; k++)
+        if (!weapon_ok(&r->slots[k]) || (k == r->wslot && r->slots[k].id)) return false;
     if (r->bag <= IT_NONE || r->bag >= IT_COUNT || ITEMS[r->bag].cat != CAT_BAG) return false;
     for (int i = 0; i < PK_COUNT; i++) if (r->perks[i] < 0 || r->perks[i] > 99) return false;
     for (int i = 0; i < STAT_COUNT; i++) if (r->xp[i] < 0 || r->xp[i] > 99999) return false;
@@ -186,6 +190,8 @@ void run_save(void) {
         /* mid-store: continuing restarts the store with what you walked in with */
         r.hp = RUN.snap_hp ? RUN.snap_hp : RUN.hp;
         r.weapon = RUN.snap_weapon;
+        memcpy(r.slots, RUN.snap_slots, sizeof r.slots);
+        r.wslot = RUN.snap_wslot;
         r.ninv = RUN.snap_ninv;
         memcpy(r.inv, RUN.snap_inv, sizeof r.inv);
         r.bag = RUN.snap_bag;
@@ -342,6 +348,14 @@ static void debug_crew(void) {
     for (int k = 0; k < MAX_CREW && n > 0; k++) if (RUN.crew[k] == CR_HOME) { RUN.crew[k] = CR_SQUAD; n--; }
 }
 
+/* --armed: the bat in hand, a pistol (rounds in the bag) and three molotovs on your back */
+static void debug_armed(void) {
+    RUN.wslot = 0;
+    RUN.slots[1] = (Stack){IT_PISTOL, 1, (int16_t)WEAPONS[W_PISTOL].mag, 0};
+    RUN.slots[2] = (Stack){IT_MOLOTOV, 3, 0, 0};
+    if (RUN.ninv < INV_MAX) RUN.inv[RUN.ninv++] = (Stack){IT_AMMO9, 24, 0, 0};
+}
+
 /* ----------------------------------------------------------------- main */
 static void parse_args(int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
@@ -363,6 +377,7 @@ static void parse_args(int argc, char **argv) {
         else if (!strcmp(argv[i], "--prefdir") && i + 1 < argc) dbg_prefdir = argv[++i];
         else if (!strcmp(argv[i], "--hub-level") && i + 1 < argc) dbg_level_hub = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--favours")) dbg_favours = true;
+        else if (!strcmp(argv[i], "--armed")) dbg_armed = true;
         else if (!strcmp(argv[i], "--crew") && i + 1 < argc) dbg_crew = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--fallen") && i + 1 < argc) { int n = atoi(argv[++i]); dbg_fallen = CLAMP(n, 0, MAX_CREW); }
     }
@@ -404,6 +419,7 @@ int main(int argc, char **argv) {
         if (dbg_seed) RUN.seed = dbg_seed;
         RUN.level = dbg_level;
         if (dbg_favours) debug_favours();
+        if (dbg_armed) debug_armed();
         debug_crew();
         start_level();
         if (dbg_mapshot) { world_mapshot(dbg_mapshot); return 0; }
@@ -422,6 +438,7 @@ int main(int argc, char **argv) {
         if (dbg_seed) RUN.seed = dbg_seed;
         if (dbg_level_hub >= 0) RUN.level = CLAMP(dbg_level_hub, 0, NUM_LEVELS - 1);
         if (dbg_favours) debug_favours();
+        if (dbg_armed) debug_armed();
         debug_crew();
         scene_set((Scene)dbg_scene);
         if (dbg_mapshot && g_scene == SC_HUB) { world_mapshot(dbg_mapshot); return 0; }

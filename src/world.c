@@ -1515,8 +1515,13 @@ static void world_place_player(void) {
     Actor *p = player();
     p->maxhp = RUN.maxhp;
     p->hp = RUN.hp;
-    p->weapon = RUN.weapon;
-    if (p->weapon.id <= IT_NONE || p->weapon.id >= IT_COUNT || p->weapon.count <= 0) p->weapon = (Stack){IT_NONE, 0, 0};
+    p->wslot = CLAMP(RUN.wslot, 0, WSLOTS - 1);
+    for (int k = 0; k < WSLOTS; k++) {
+        Stack s = k == p->wslot ? RUN.weapon : RUN.slots[k];
+        if (!item_is_weapon((ItemId)s.id) || s.count <= 0) s = (Stack){IT_NONE, 0, 0, 0};
+        p->slots[k] = (Stack){IT_NONE, 0, 0, 0};
+        *weapon_slot(p, k) = s;
+    }
     /* never trust the count (or the ids) blindly: the run may come from a save file */
     p->ninv = 0;
     for (int k = 0; k < CLAMP(RUN.ninv, 0, INV_MAX); k++)
@@ -1549,10 +1554,16 @@ void world_start_level(int level) {
         /* top every pistol up to a full magazine (STEADY AIM's bigger one, an extended mag too) - never take rounds away */
         Stack g = {IT_PISTOL, 1, 0};
         g.cond = (int16_t)weapon_max_cond(&g);
-        if (p->weapon.id == IT_PISTOL) p->weapon.cond = MAXF(p->weapon.cond, weapon_max_cond(&p->weapon));
-        else if (inv_count(p, IT_PISTOL) > 0) { for (int k = 0; k < p->ninv; k++) if (p->inv[k].id == IT_PISTOL) p->inv[k].cond = MAXF(p->inv[k].cond, weapon_max_cond(&p->inv[k])); }
-        else if (!p->weapon.id) p->weapon = g;
-        else if (!inv_add(p, g)) pickup_spawn(g, p->pos, v2(0, 0));
+        bool have = false;
+        for (int k = 0; k < WSLOTS; k++) {
+            Stack *s = weapon_slot(p, k);
+            if (s->id == IT_PISTOL) { s->cond = MAXF(s->cond, weapon_max_cond(s)); have = true; }
+        }
+        for (int k = 0; k < p->ninv; k++)
+            if (p->inv[k].id == IT_PISTOL) { p->inv[k].cond = MAXF(p->inv[k].cond, weapon_max_cond(&p->inv[k])); have = true; }
+        int free = weapon_free_slot(p);   /* the hands if they're free, otherwise your back, otherwise the bag */
+        if (!have && free >= 0) *weapon_slot(p, free) = g;
+        else if (!have && !inv_add(p, g)) pickup_spawn(g, p->pos, v2(0, 0));
         Stack am = {IT_AMMO9, 12, 0};
         inv_add(p, am);
     }
@@ -1608,8 +1619,17 @@ static void update_prompt(void) {
     }
     int pk = interact_pickup(p);
     if (pk >= 0) {
-        bool wpn = ITEMS[W.pickups[pk].st.id].cat == CAT_WEAPON;
-        SDL_snprintf(prompt_buf, sizeof prompt_buf, "^y[%s]^0 %s %s", KEY_USE, wpn ? "Take" : "Pick up", ITEMS[W.pickups[pk].st.id].name);
+        ItemId id = (ItemId)W.pickups[pk].st.id;
+        const char *verb = "Pick up";
+        if (ITEMS[id].cat == CAT_WEAPON) {
+            /* a free slot takes it; every slot full, it takes the place of the one in your hands */
+            verb = "Swap for";
+            for (int k = 0; k < WSLOTS; k++) {
+                Stack *s = weapon_slot(p, k);
+                if (!s->id || (s->id == id && s->count < ITEMS[id].stack)) verb = "Take";
+            }
+        }
+        SDL_snprintf(prompt_buf, sizeof prompt_buf, "^y[%s]^0 %s %s", KEY_USE, verb, ITEMS[id].name);
         return;
     }
     if (g_search_cont >= 0) return;
@@ -1668,7 +1688,8 @@ static void camera_update(float dt) {
 /* ------------------------------------------------------------- update */
 /* buttons hit during a hitstop freeze are kept for the first frame after it, not dropped */
 static void buffer_presses(bool frozen) {
-    static const Action acts[] = {ACT_ATTACK, ACT_THROW, ACT_INTERACT, ACT_EXECUTE, ACT_HEAL, ACT_SWAP, ACT_RELOAD};
+    static const Action acts[] = {ACT_ATTACK, ACT_THROW, ACT_INTERACT, ACT_EXECUTE, ACT_HEAL, ACT_SWAP, ACT_RELOAD,
+                                  ACT_SLOT1, ACT_SLOT2, ACT_SLOT3, ACT_WEAPON_NEXT, ACT_WEAPON_PREV};
     for (int i = 0; i < ARRAY_LEN(acts); i++) {
         Action a = acts[i];
         if (frozen) {

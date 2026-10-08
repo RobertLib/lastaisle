@@ -28,6 +28,9 @@ static void map_key(SDL_Scancode sc, bool down) {
     case SDL_SCANCODE_I: set_act(key_state, ACT_INVENTORY, down); break;
     case SDL_SCANCODE_F: set_act(key_state, ACT_HEAL, down); break;
     case SDL_SCANCODE_Q: set_act(key_state, ACT_SWAP, down); break;
+    case SDL_SCANCODE_1: set_act(key_state, ACT_SLOT1, down); break;
+    case SDL_SCANCODE_2: set_act(key_state, ACT_SLOT2, down); break;
+    case SDL_SCANCODE_3: set_act(key_state, ACT_SLOT3, down); break;
     case SDL_SCANCODE_R: set_act(key_state, ACT_RELOAD, down); break;
     case SDL_SCANCODE_ESCAPE: set_act(key_state, ACT_PAUSE, down); set_act(key_state, ACT_BACK, down); break;
     case SDL_SCANCODE_P: set_act(key_state, ACT_PAUSE, down); break;
@@ -51,8 +54,8 @@ static void map_pad_button(int b, bool down) {
     case SDL_GAMEPAD_BUTTON_LEFT_STICK: set_act(pad_state, ACT_LOOK, down); break;
     case SDL_GAMEPAD_BUTTON_DPAD_UP: set_act(pad_state, ACT_MENU_UP, down); break;
     case SDL_GAMEPAD_BUTTON_DPAD_DOWN: set_act(pad_state, ACT_MENU_DOWN, down); break;
-    case SDL_GAMEPAD_BUTTON_DPAD_LEFT: set_act(pad_state, ACT_MENU_LEFT, down); break;
-    case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: set_act(pad_state, ACT_MENU_RIGHT, down); break;
+    case SDL_GAMEPAD_BUTTON_DPAD_LEFT: set_act(pad_state, ACT_MENU_LEFT, down); set_act(pad_state, ACT_WEAPON_PREV, down); break;
+    case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: set_act(pad_state, ACT_MENU_RIGHT, down); set_act(pad_state, ACT_WEAPON_NEXT, down); break;
     default: break;
     }
 }
@@ -172,6 +175,16 @@ void input_update(float dt) {
             if (IN.repeat_t[a] <= 0) { IN.repeat[a] = true; IN.repeat_t[a] = 0.09f; }
         }
     }
+    /* the wheel steps through your weapons: a notch (or a good swipe of the trackpad) is one step, and a trackpad's
+       coasting doesn't spin it round and round */
+    static float wheel_acc, wheel_cd;
+    wheel_cd -= dt;
+    wheel_acc = wheel_cd > 0 ? 0 : wheel_acc + IN.wheel;
+    if (fabsf(wheel_acc) >= 1) {
+        IN.pressed[wheel_acc > 0 ? ACT_WEAPON_PREV : ACT_WEAPON_NEXT] = true;
+        wheel_acc = 0;
+        wheel_cd = 0.12f;
+    } else if (IN.wheel == 0) wheel_acc *= MAXF(0, 1 - 4 * dt);
     V2 kb = v2((IN.down[ACT_RIGHT] ? 1.0f : 0.0f) - (IN.down[ACT_LEFT] ? 1.0f : 0.0f),
                (IN.down[ACT_DOWN] ? 1.0f : 0.0f) - (IN.down[ACT_UP] ? 1.0f : 0.0f));
     if (v2_len2(stick) > 0.0f) {

@@ -275,15 +275,6 @@ static Stack make_weapon_stack(ItemId id) {
     return s;
 }
 
-void equip(Actor *a, Stack st) {
-    if (a->weapon.id) drop_weapon(a, false);
-    a->weapon = st;
-    a->atk_cd = 0.15f;
-    a->atk_t = -1;
-    a->hit_pending = false;   /* a swing started with the old weapon never lands with the new one */
-    a->reload_t = 0;
-}
-
 void drop_weapon(Actor *a, bool thrown) {
     if (!a->weapon.id) return;
     V2 v = thrown ? v2(0, 0) : v2(frange(-30, 30), frange(-30, 30));
@@ -294,35 +285,90 @@ void drop_weapon(Actor *a, bool thrown) {
     a->hit_pending = false;
 }
 
-void swap_weapon(Actor *a) {
-    /* swap held weapon with the next weapon stored in the bag */
-    int found = -1;
-    for (int i = 0; i < a->ninv; i++)
-        if (ITEMS[a->inv[i].id].cat == CAT_WEAPON) { found = i; break; }
-    if (found < 0) {
-        if (a->weapon.id) {
-            if (inv_add(a, a->weapon)) {
-                a->weapon.id = IT_NONE;
-                a->hit_pending = false;
-                audio_play(SFX_PICKUP_WEAPON, 0.5f, 0, 0.9f);
-            } else world_hint("No room in the bag.");
-        }
-        return;
-    }
-    Stack next = a->inv[found];
-    memmove(&a->inv[found], &a->inv[found + 1], sizeof(Stack) * (a->ninv - found - 1));
-    a->ninv--;
-    if (a->weapon.id && !inv_add(a, a->weapon)) {
-        /* no room: put it back */
-        a->inv[a->ninv++] = next;
-        world_hint("No room in the bag.");
-        return;
-    }
-    a->weapon = next;
-    a->atk_cd = 0.2f;
+/* ------------------------------------------------------- weapon slots */
+/* you carry up to WSLOTS weapons: the one in your hands (slot wslot) and the rest on your back, none of them in the bag */
+int weapon_free_slot(Actor *a) {
+    if (!a->weapon.id) return a->wslot;
+    for (int k = 0; k < WSLOTS; k++) if (!weapon_slot(a, k)->id) return k;
+    return -1;
+}
+
+static void hands_reset(Actor *a, float cd) {
+    a->atk_cd = MAXF(a->atk_cd, cd);
     a->atk_t = -1;
-    a->hit_pending = false;
-    audio_play(SFX_PICKUP_WEAPON, 0.6f, 0, 1.0f);
+    a->hit_pending = false;   /* a swing started with the old weapon never lands with the new one */
+    a->reload_t = 0;
+}
+
+static void hands_to(Actor *a, int k) {
+    a->slots[a->wslot] = a->weapon;
+    a->weapon = a->slots[k];
+    a->slots[k] = (Stack){IT_NONE, 0, 0, 0};
+    a->wslot = k;
+    hands_reset(a, 0.2f);
+}
+
+bool weapon_select(Actor *a, int k) {
+    if (k < 0 || k >= WSLOTS || k == a->wslot) return false;
+    hands_to(a, k);
+    audio_play(SFX_PICKUP_WEAPON, a->weapon.id ? 0.6f : 0.4f, 0, a->weapon.id ? 1.0f : 0.9f);
+    SDL_Log("WEAPON: slot %d in hand (%s)", k + 1, a->weapon.id ? ITEMS[a->weapon.id].name : "bare hands");
+    return true;
+}
+
+/* steps over the empty slots - unless the one in hand is all you carry: then it goes on your back and back again */
+void weapon_cycle(Actor *a, int dir) {
+    for (int i = 1; i < WSLOTS; i++) {
+        int k = ((a->wslot + dir * i) % WSLOTS + WSLOTS) % WSLOTS;
+        if (weapon_slot(a, k)->id) { weapon_select(a, k); return; }
+    }
+    if (a->weapon.id) {
+        for (int i = 1; i < WSLOTS; i++) {
+            int k = ((a->wslot + dir * i) % WSLOTS + WSLOTS) % WSLOTS;
+            if (!a->slots[k].id) { weapon_select(a, k); return; }
+        }
+    }
+}
+
+/* onto a stack of the same throwables that has room, else into a free slot and in hand, else in place of the one in
+   your hands. *st keeps what didn't fit on the stack (count 0: all of it went in); returns the weapon it took the place of */
+Stack weapon_take(Actor *a, Stack *st) {
+    Stack old = {IT_NONE, 0, 0, 0};
+    int maxs = ITEMS[st->id].stack;
+    if (maxs > 1) {
+        bool merged = false;
+        for (int i = 0; i < WSLOTS && st->count > 0; i++) {
+            Stack *s = weapon_slot(a, (a->wslot + i) % WSLOTS);
+            if (s->id != st->id || s->count >= maxs) continue;
+            int mv = MINF(maxs - s->count, st->count);
+            s->count += mv;
+            st->count -= mv;
+            merged = true;
+        }
+        if (merged) return old;   /* topped up: what didn't fit stays where it was */
+    }
+    int k = weapon_free_slot(a);
+    if (k < 0) {
+        old = a->weapon;
+        k = a->wslot;
+    }
+    if (k == a->wslot) {
+        a->weapon = *st;
+        hands_reset(a, 0.15f);
+    } else {
+        a->slots[k] = *st;
+        hands_to(a, k);
+    }
+    st->count = 0;
+    return old;
+}
+
+Stack weapon_slot_remove(Actor *a, int k) {
+    Stack *s = weapon_slot(a, k);
+    Stack out = *s;
+    *s = (Stack){IT_NONE, 0, 0, 0};
+    if (k == a->wslot) a->hit_pending = false;
+    return out;
 }
 
 void use_heal(Actor *a) {
@@ -346,8 +392,18 @@ void use_heal(Actor *a) {
 /* -------------------------------------------------------------- crafting */
 static int have_for_craft(Actor *a, ItemId id) {
     int n = inv_count(a, id);
-    if (a->weapon.id == id) n += a->weapon.count;
+    for (int k = 0; k < WSLOTS; k++) if (weapon_slot(a, k)->id == id) n += weapon_slot(a, k)->count;
     return n;
+}
+
+/* a chainsaw you carry - hands, back or bag - that could take more fuel */
+static Stack *thirsty_saw(Actor *a) {
+    for (int i = 0; i < WSLOTS; i++) {
+        Stack *s = weapon_slot(a, (a->wslot + i) % WSLOTS);
+        if (s->id == IT_CHAINSAW && s->cond < 100) return s;
+    }
+    for (int i = 0; i < a->ninv; i++) if (a->inv[i].id == IT_CHAINSAW && a->inv[i].cond < 100) return &a->inv[i];
+    return NULL;
 }
 
 /* units crafting may use: bag + hands, minus what the shopping list and the favours still need (bag and carts counted) */
@@ -364,11 +420,7 @@ static bool can_craft_ex(Actor *a, const Recipe *r, bool keep_list) {
         if (!a->weapon.id || w->kind != WK_MELEE) return false;
         if (a->weapon.cond >= weapon_max_cond(&a->weapon)) return false;
     }
-    if (r->flag == RF_REFUEL) {
-        bool need = a->weapon.id == IT_CHAINSAW && a->weapon.cond < 100;
-        for (int i = 0; i < a->ninv; i++) if (a->inv[i].id == IT_CHAINSAW && a->inv[i].cond < 100) need = true;
-        if (!need) return false;
-    }
+    if (r->flag == RF_REFUEL && !thirsty_saw(a)) return false;
     for (int k = 0; k < 3; k++) {
         if (!r->in[k].id) continue;
         int have = keep_list ? craft_have(a, r->in[k].id) : have_for_craft(a, r->in[k].id);
@@ -382,13 +434,19 @@ bool can_craft(Actor *a, const Recipe *r) { return can_craft_ex(a, r, true); }
 
 bool craft_list_blocked(Actor *a, const Recipe *r) { return !can_craft_ex(a, r, true) && can_craft_ex(a, r, false); }
 
+/* from the bag first, then the weapons on your back, the one in hand last */
 static void consume_for_craft(Actor *a, ItemId id, int n) {
     int from_bag = MINF(n, inv_count(a, id));
     inv_remove(a, id, from_bag);
     n -= from_bag;
-    if (n > 0 && a->weapon.id == id) {
-        a->weapon.count -= n;
-        if (a->weapon.count <= 0) { a->weapon.id = IT_NONE; a->weapon.count = 0; }
+    for (int i = 1; i <= WSLOTS && n > 0; i++) {
+        int k = (a->wslot + i) % WSLOTS;
+        Stack *s = weapon_slot(a, k);
+        if (s->id != id) continue;
+        int mv = MINF(n, s->count);
+        s->count -= mv;
+        n -= mv;
+        if (s->count <= 0) weapon_slot_remove(a, k);
     }
 }
 
@@ -405,16 +463,14 @@ bool craft(Actor *a, const Recipe *r) {
     }
     if (r->flag == RF_REFUEL) {
         consume_for_craft(a, IT_GASOLINE, 1);
-        if (a->weapon.id == IT_CHAINSAW && a->weapon.cond < 100) a->weapon.cond = 100;
-        else
-            for (int i = 0; i < a->ninv; i++)
-                if (a->inv[i].id == IT_CHAINSAW && a->inv[i].cond < 100) { a->inv[i].cond = 100; break; }
+        Stack *saw = thirsty_saw(a);
+        if (saw) saw->cond = 100;
         audio_play(SFX_CRAFT, 0.8f, 0, 0.8f);
         return true;
     }
     for (int k = 0; k < 3; k++)
         if (r->in[k].id) consume_for_craft(a, r->in[k].id, r->in[k].n);
-    Stack out;
+    Stack out = {IT_NONE, 0, 0, 0};
     if (item_is_weapon(r->out) && ITEMS[r->out].stack == 1) {
         out = make_weapon_stack(r->out);
         if (RUN.perks[PK_TINKERER] && item_weapon(r->out)->kind == WK_MELEE) out.cond *= 2;
@@ -423,16 +479,24 @@ bool craft(Actor *a, const Recipe *r) {
         out.count = (int16_t)r->out_n;
         out.cond = 0;
     }
-    /* crafted weapons go straight to the hands if they're free, otherwise the bag */
-    if (item_is_weapon(r->out) && !a->weapon.id) a->weapon = out;
-    else if (item_is_weapon(r->out) && a->weapon.id == r->out && ITEMS[r->out].stack > 1) {
-        int total = a->weapon.count + out.count;
-        a->weapon.count = (int16_t)MINF(ITEMS[r->out].stack, total);
-        Stack rest = out;
-        rest.count = (int16_t)(total - a->weapon.count);
-        if (rest.count > 0 && !inv_add(a, rest)) pickup_spawn(rest, a->pos, v2(0, 0));
+    /* crafted weapons: onto the stack of the same you carry, else the hands if they're free, else a free slot on your
+       back, else the bag */
+    if (item_is_weapon(r->out)) {
+        int maxs = ITEMS[r->out].stack;
+        for (int k = 0; k < WSLOTS && maxs > 1 && out.count > 0; k++) {
+            Stack *s = weapon_slot(a, (a->wslot + k) % WSLOTS);
+            if (s->id != r->out || s->count >= maxs) continue;
+            int mv = MINF(maxs - s->count, out.count);
+            s->count += mv;
+            out.count -= mv;
+        }
+        int k = weapon_free_slot(a);
+        if (out.count > 0 && k >= 0) {
+            *weapon_slot(a, k) = out;
+            out.count = 0;
+        }
     }
-    else if (!inv_add(a, out)) pickup_spawn(out, a->pos, v2(0, 0));
+    if (out.count > 0 && !inv_add(a, out)) pickup_spawn(out, a->pos, v2(0, 0));
     audio_play(SFX_CRAFT, 0.9f, 0, 1);
     return true;
 }
@@ -725,6 +789,14 @@ void player_update(Actor *p, float dt) {
         p->reload_t -= dt;
     }
 
+    /* the weapons you carry: 1-3 take that slot in hand, Q / Y / the wheel / the d-pad step through them
+       (at the Greenhouse they're packed: the bag screen picks the one in hand) */
+    if (!W.hub) {
+        for (int k = 0; k < WSLOTS; k++) if (IN.pressed[ACT_SLOT1 + k]) weapon_select(p, k);
+        if (IN.pressed[ACT_SWAP] || IN.pressed[ACT_WEAPON_NEXT]) weapon_cycle(p, 1);
+        if (IN.pressed[ACT_WEAPON_PREV]) weapon_cycle(p, -1);
+    }
+
     const WeaponDef *w = item_weapon(p->weapon.id);
     /* attack */
     if (p->cart >= 0) {
@@ -795,7 +867,6 @@ void player_update(Actor *p, float dt) {
     if (w->kind == WK_GUN && p->weapon.cond <= 0 && p->atk_cd < -0.3f && inv_count(p, w->ammo) > 0 && p->reload_t <= 0 && !range_gun)
         try_reload(p);
     if (IN.pressed[ACT_HEAL]) use_heal(p);
-    if (IN.pressed[ACT_SWAP] && p->cart < 0 && !W.hub) swap_weapon(p);   /* at the Greenhouse the bag screen picks the weapon */
 
     /* execute */
     if (IN.pressed[ACT_EXECUTE]) {
@@ -853,18 +924,11 @@ void player_update(Actor *p, float dt) {
             collect_pickup(p, pk);
             done = true;
         } else if (pk >= 0) {
+            /* a free slot takes it (in hand); with every slot full it takes the place of the one in your hands */
             Pickup *pp = &W.pickups[pk];
-            if (p->weapon.id == pp->st.id && ITEMS[pp->st.id].stack > 1 && p->weapon.count < ITEMS[pp->st.id].stack) {
-                p->weapon.count += pp->st.count;
-                if (p->weapon.count > ITEMS[pp->st.id].stack) {
-                    pp->st.count = (int16_t)(p->weapon.count - ITEMS[pp->st.id].stack);
-                    p->weapon.count = (int16_t)ITEMS[pp->st.id].stack;
-                } else pp->alive = false;
-            } else {
-                Stack st = pp->st;
-                pp->alive = false;
-                equip(p, st);
-            }
+            Stack old = weapon_take(p, &pp->st);
+            if (pp->st.count <= 0) pp->alive = false;
+            if (old.id) pickup_spawn(old, p->pos, v2(frange(-30, 30), frange(-30, 30)));
             audio_play(SFX_PICKUP_WEAPON, 0.8f, 0, 1);
             done = true;
         }

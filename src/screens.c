@@ -91,6 +91,7 @@ static void bg_prepare(void) {
     RUN.hp = RUN.maxhp = 8;
     RUN.ninv = 0;
     RUN.weapon.id = IT_NONE;
+    memset(RUN.slots, 0, sizeof RUN.slots);
     RUN.bag = IT_BACKPACK;
     memset(RUN.perks, 0, sizeof RUN.perks);
     int lvl = (int)(SDL_GetTicks() % 3) + 1;
@@ -226,6 +227,8 @@ void new_run(int mode) {
 static void snapshot(void) {
     RUN.snap_hp = RUN.hp;
     RUN.snap_weapon = RUN.weapon;
+    memcpy(RUN.snap_slots, RUN.slots, sizeof RUN.slots);
+    RUN.snap_wslot = RUN.wslot;
     RUN.snap_ninv = RUN.ninv;
     memcpy(RUN.snap_inv, RUN.inv, sizeof RUN.inv);
     RUN.snap_bag = RUN.bag;
@@ -239,6 +242,8 @@ static void snapshot(void) {
 void run_restore_snapshot(void) {
     RUN.hp = RUN.snap_hp;
     RUN.weapon = RUN.snap_weapon;
+    memcpy(RUN.slots, RUN.snap_slots, sizeof RUN.slots);
+    RUN.wslot = RUN.snap_wslot;
     RUN.ninv = RUN.snap_ninv;
     memcpy(RUN.inv, RUN.snap_inv, sizeof RUN.inv);
     RUN.bag = RUN.snap_bag;
@@ -360,6 +365,8 @@ static int deliver(void) {
     }
     RUN.hp = p->hp;
     RUN.weapon = p->weapon;
+    memcpy(RUN.slots, p->slots, sizeof RUN.slots);
+    RUN.wslot = p->wslot;
     RUN.ninv = p->ninv;
     memcpy(RUN.inv, p->inv, sizeof(Stack) * p->ninv);
     /* the greenhouse shows what the list brought home */
@@ -1046,11 +1053,11 @@ static void draw_howto(void) {
     bg_draw(rgb(14, 12, 8), 0.84f);
     gfx_text(FONT_BIG, "HOW TO SHOP", VIEW_W / 2, 10, COL_YELLOW, TXT_CENTER | TXT_SHADOW | TXT_OUTLINE);
     /* the table follows the device in use; the other one is summed up underneath */
-    const char *keys[] = {"WASD", "MOUSE", "LMB", "RMB", "E", "SPACE", "SHIFT", "TAB", "F", "Q", "R", "ESC"};
-    const char *pads[] = {"L STICK", "R STICK", "RT", "LT", "A", "X", "L3", "BACK", "LB / B", "Y", "RB", "START"};
+    const char *keys[] = {"WASD", "MOUSE", "LMB", "RMB", "E", "SPACE", "SHIFT", "TAB", "F", "Q / 1-3", "R", "ESC"};
+    const char *pads[] = {"L STICK", "R STICK", "RT", "LT", "A", "X", "L3", "BACK", "LB / B", "Y / D-PAD", "RB", "START"};
     const char *acts[] = {"Move", "Aim", "Attack / shoot", "Throw your weapon", "Search / take / cart / exit",
                           "Execute a downed enemy", "Look further", "Bag + crafting", "Use bandage / meds",
-                          "Swap weapon with bag", "Reload / try again", "Pause"};
+                          "Switch weapon (you carry three)", "Reload / try again", "Pause"};
     for (int i = 0; i < 12; i++) {
         float y = 36 + i * 13;
         gfx_text(FONT_SMALL, ctl(keys[i], pads[i]), 70, y, COL_YELLOW, TXT_RIGHT);
@@ -1069,9 +1076,9 @@ static void draw_howto(void) {
     gfx_text_wrap(FONT_SMALL, rules, 252, 36, 212, COL_WHITE, 0, 10);
     gfx_text(FONT_SMALL,
              ctl("Gamepad: sticks move/aim, RT attack, LT throw, A use, X execute, L3 look, BACK bag,\n"
-                 "LB or B heal, Y swap, RB reload, START pause. Menus: A choose, B back.",
+                 "LB or B heal, Y or D-PAD switch weapon, RB reload, START pause. Menus: A choose, B back.",
                  "Keyboard: WASD move, mouse aim, LMB attack, RMB throw, E use, SPACE execute, SHIFT look,\n"
-                 "TAB bag, F heal, Q swap, R reload, ESC pause. Menus: ENTER choose, ESC back."),
+                 "TAB bag, F heal, Q / 1-3 / wheel switch weapon, R reload, ESC pause. Menus: ENTER choose, ESC back."),
              VIEW_W / 2, 220, COL_GREY, TXT_CENTER);
     gfx_text(FONT_SMALL, ctl("^yENTER^0 back", "^yA^0 back"), VIEW_W / 2, 250, COL_WHITE, TXT_CENTER);
     hud_cursor();

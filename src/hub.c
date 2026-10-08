@@ -196,6 +196,7 @@ static bool heard(int arch) {
 
 static int have_mat(ItemId id);
 static void take_mat(ItemId id, int n);
+static int hub_stow(Stack w);
 
 /* ================================================================== favours */
 /* tonight's favour from them that you haven't taken on: not asked yet (or you walked off before answering), or turned
@@ -505,8 +506,10 @@ static void give_mods(ItemCount g, int mods) {
         return;
     }
     Stack s = {(int16_t)g.id, (int16_t)g.n, 0, (int16_t)(item_is_weapon(g.id) ? mods : 0)};
-    if (item_is_weapon(g.id)) s.cond = (int16_t)weapon_max_cond(&s);
-    if (!inv_add(p, s)) {
+    if (item_is_weapon(g.id)) {
+        s.cond = (int16_t)weapon_max_cond(&s);
+        hub_stow(s);
+    } else if (!inv_add(p, s)) {
         int pi = pickup_spawn(s, p->pos, v2(frange(-20, 20), frange(10, 30)));
         if (pi >= 0) W.pickups[pi].dropped = true;
     }
@@ -1084,7 +1087,11 @@ static bool moddable(ItemId id) {
 static int wb_items(WbItem *out) {
     Actor *p = player();
     int n = 0;
-    if (p->weapon.id && moddable((ItemId)p->weapon.id)) out[n++] = (WbItem){&p->weapon, "HANDS"};
+    static const char *const where[WSLOTS] = {"SLOT 1", "SLOT 2", "SLOT 3"};
+    for (int k = 0; k < WSLOTS; k++) {
+        Stack *s = weapon_slot(p, k);
+        if (s->id && moddable((ItemId)s->id)) out[n++] = (WbItem){s, k == p->wslot ? "HANDS" : where[k]};
+    }
     for (int k = 0; k < p->ninv; k++) if (moddable((ItemId)p->inv[k].id)) out[n++] = (WbItem){&p->inv[k], "BAG"};
     for (int k = 0; k < RUN.nlocker; k++) if (moddable((ItemId)RUN.locker[k].id)) out[n++] = (WbItem){&RUN.locker[k], "LOCKER"};
     return n;
@@ -1139,7 +1146,7 @@ static void wb_open(void) {
     H.wb_msg_t = 0;
     W.hub_lock = HUB_HELD;
     audio_play(SFX_CRAFT, 0.5f, 0, 1.2f);
-    WbItem items[1 + INV_MAX + 16];
+    WbItem items[WSLOTS + INV_MAX + 16];
     if (wb_items(items) == 0) wb_note("Nothing here Gus can work on. Bring him a bat, a blade or a gun.");
 }
 
@@ -1166,7 +1173,7 @@ static void wb_fit(Stack *s, int m) {
 static void workbench_update(float dt) {
     H.wb_msg_t -= dt;
     if (IN.pressed[ACT_BACK] || IN.pressed[ACT_PAUSE] || IN.pressed[ACT_INVENTORY]) { wb_close(); return; }
-    WbItem items[1 + INV_MAX + 16];
+    WbItem items[WSLOTS + INV_MAX + 16];
     int n = wb_items(items);
     if (n == 0) {
         if (IN.pressed[ACT_INTERACT] || IN.pressed[ACT_CONFIRM] || IN.click) wb_close();
@@ -1226,7 +1233,7 @@ static void workbench_draw(void) {
     gfx_fill(0, 0, VIEW_W, VIEW_H, rgba(11, 10, 16, 232));
     gfx_text(FONT_BIG, "GUS'S WORKBENCH", 14, 10, COL_KRAFT, TXT_SHADOW);
     gfx_text(FONT_SMALL, "Mods stay on the weapon for good. Parts come from your bag, then your locker.", 14, 26, COL_GREY, 0);
-    WbItem items[1 + INV_MAX + 16];
+    WbItem items[WSLOTS + INV_MAX + 16];
     int n = wb_items(items);
     if (H.wb_msg_t > 0) gfx_text(FONT_SMALL, H.wb_msg, VIEW_W / 2, 228, COL_ORANGE, TXT_CENTER | TXT_OUTLINE);
     gfx_text(FONT_SMALL, ctl("^yE/LMB^0 fit mod   ^yARROWS^0 choose   ^yESC^0 done", "^yA^0 fit mod   ^yD-PAD^0 choose   ^yB^0 done"),
@@ -1463,14 +1470,22 @@ static void hands_sync(void) {
     if (H.unpacked || !p->weapon.id || H.mode == HA_RANGE) return;   /* June's pistol is the range's */
     Stack w = p->weapon;
     p->weapon = (Stack){IT_NONE, 0, 0, 0};
-    if (!H.pack.id) {
-        H.pack = w;
-        floater(v2(p->pos.x, p->pos.y - 16), "Packed for the run", COL_GREY, false);
-    } else if (!inv_add(p, w)) {
-        int pi = pickup_spawn(w, p->pos, v2(frange(-20, 20), frange(10, 30)));
-        if (pi >= 0) W.pickups[pi].dropped = true;
-        world_hint("No room in the bag for it.");
-    }
+    if (hub_stow(w) <= 1) floater(v2(p->pos.x, p->pos.y - 16), "Packed for the run", COL_GREY, false);
+}
+
+/* a weapon that comes your way at the camp: the hands' slot if it's empty (packed, unless you've the bag screen open),
+   else a free slot on your back, else the bag, else the grass. Says where: 0 hands, 1 back, 2 bag, 3 dropped */
+static int hub_stow(Stack w) {
+    Actor *p = player();
+    Stack *hands = H.unpacked ? &p->weapon : &H.pack;
+    if (!hands->id) { *hands = w; return 0; }
+    for (int k = 0; k < WSLOTS; k++)
+        if (k != p->wslot && !p->slots[k].id) { p->slots[k] = w; return 1; }
+    if (inv_add(p, w)) return 2;
+    int pi = pickup_spawn(w, p->pos, v2(frange(-20, 20), frange(10, 30)));
+    if (pi >= 0) W.pickups[pi].dropped = true;
+    world_hint("No room in the bag for it.");
+    return 3;
 }
 
 void hub_enter(void) {
@@ -1491,6 +1506,8 @@ void hub_sync_run(void) {
     Actor *p = player();
     RUN.hp = MAXF(1, p->hp);
     RUN.weapon = *hub_packed();   /* June's pistol stays at the range */
+    memcpy(RUN.slots, p->slots, sizeof RUN.slots);
+    RUN.wslot = p->wslot;
     RUN.ninv = p->ninv;
     memcpy(RUN.inv, p->inv, sizeof(Stack) * p->ninv);
 }
@@ -1823,7 +1840,7 @@ void hub_bot(float dt) {
         if (H.countdown <= 0) bot_go(HUB.flags[H.next]);
         return;
     case HA_WORKBENCH: {
-        WbItem items[1 + INV_MAX + 16];
+        WbItem items[WSLOTS + INV_MAX + 16];
         int n = wb_items(items), mods[MOD_COUNT], fit = -1;
         for (int w = 0; w < n && fit < 0; w++) {
             int nm = wb_mods((ItemId)items[w].st->id, mods);

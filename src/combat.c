@@ -120,6 +120,8 @@ void kill_actor(int vi, int attacker, V2 dir, int weapon, int flags) {
         pickup_spawn(v->weapon, v->pos, v2(frange(-60, 60), frange(-60, 60)));
         v->weapon.id = IT_NONE;
     }
+    for (int k = 0; k < WSLOTS; k++)
+        if (v->slots[k].id) { pickup_spawn(v->slots[k], v->pos, v2(frange(-60, 60), frange(-60, 60))); v->slots[k].id = IT_NONE; }
     for (int i = 0; i < v->ninv; i++)
         pickup_spawn(v->inv[i], v->pos, v2(frange(-70, 70), frange(-70, 70)));
     v->ninv = 0;

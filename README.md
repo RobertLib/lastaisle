@@ -33,7 +33,9 @@ then make it back to your van alive.
 * **Noise matters**: gunfire carries across the dead city. Shoot too much and a squad comes in
   from outside to see what the fuss is about. Melee is quiet; silent takedowns are instant.
 * **27 weapons**: brooms, bats, crowbars, frying pans, machetes, fire axes, sledgehammers,
-  chainsaws, pistols, shotguns, rifles, nail guns, molotovs, pipe bombs, bricks...
+  chainsaws, pistols, shotguns, rifles, nail guns, molotovs, pipe bombs, bricks... Carry three at once - one
+  in your hands, two on your back, none of them taking room in the bag - and switch between them with 1-3, Q
+  or the mouse wheel. Pick one up with every slot full and it takes the place of the one in your hands.
 * **Crafting**: nail bats, barbed bats, spears, molotovs, aerosol flamethrowers, pipe bombs,
   zip guns, sawn-offs, bandages, first aid kits — and duct tape to keep it all together.
 * **Factions with their own politics**: timid scavengers who flee (or drop their loot at
@@ -57,8 +59,8 @@ then make it back to your van alive.
 * **The Greenhouse between stores**: before every run you walk the camp. Rosa hands you the shopping
   list - the van doesn't leave without it. Talk to Gus, June, Big Dee, Marta, Theo and the neighbours
   too (they have something new to say every evening, and now and then something to give). Nobody walks
-  round the camp armed: your weapon stays packed (pick which one in the bag screen) and is back in your
-  hands at the store. Train once an evening at each station — the **weight bench** (strength:
+  round the camp armed: your weapons stay packed (pick the one for your hands in the bag screen) and are back
+  on you at the store. Train once an evening at each station — the **weight bench** (strength:
   harder hits, more knockdowns), the **shooting range** (aim: tighter spread, faster reloads) and
   **Theo's flags** round the glass (fitness: you run faster) — up to level 5. Put **Gus's workbench**
   to use: spikes, honed edges, wrapped grips, reinforcement and weighted heads for melee weapons;
@@ -104,7 +106,8 @@ then make it back to your van alive.
 | Look further | Shift | L3 |
 | Bag & crafting | Tab / I | Back |
 | Heal | F | LB / B |
-| Swap weapon with bag (bag screen: move to/from the van or the locker) | Q | Y |
+| Next weapon (bag screen: move to/from the van or the locker) | Q / mouse wheel | Y / D-pad ← → |
+| Take weapon slot 1, 2, 3 in hand | 1, 2, 3 | |
 | Reload (after dying in Story: try again) | R | RB |
 | Drop item (bag screen) | Right mouse / R | RB |
 | Pause | Esc / P | Start |
@@ -169,7 +172,8 @@ game), `--mapshot out.png` (render a whole generated level), `--frames N --shot 
 `--scene 12 [--hub-level L]` (the Greenhouse the evening before level L; with `--mapshot` renders the whole yard),
 `--favours` (with `--scene` or `--level`: the favours of the earlier stores are in your bag to hand over, this store's are asked),
 `--crew N` (with `--scene` or `--level`: the first N of the crew still living are asked along, up to the store's limit),
-`--fallen N` (the first N of the crew died in the store before). Debug runs never
+`--fallen N` (the first N of the crew died in the store before),
+`--armed` (with `--scene` or `--level`: every weapon slot full - the bat, a pistol with rounds, three molotovs). Debug runs never
 touch your saves; add `--prefdir DIR` to have them read and write saves and settings in `DIR` instead.
 
 Saves and settings live in the platform's user data folder (`SDL_GetPrefPath`). Runs are saved at

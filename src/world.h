@@ -80,6 +80,7 @@ typedef struct {
 /* ============================================================= actors */
 #define MAX_ACTORS 96
 #define INV_MAX 24
+#define WSLOTS 3   /* weapons the player carries: one in hand, the rest on the back - no room taken in the bag */
 
 typedef enum {
     AI_IDLE, AI_WANDER, AI_LOOT, AI_INVESTIGATE, AI_CHASE, AI_FLEE, AI_SURRENDER, AI_SEARCH, AI_GUARD,
@@ -132,6 +133,8 @@ typedef struct {
     float speed_mul;
     int hp, maxhp;
     Stack weapon;             /* held weapon (id may be IT_NONE = fists) */
+    Stack slots[WSLOTS];      /* player: the weapons on your back, each in its own slot (keys 1-3); slots[wslot] stays empty */
+    int wslot;                /* player: the slot the weapon in hand belongs to */
     float atk_cd;             /* time until next attack */
     float atk_t;              /* attack animation time (counts up while >=0) */
     bool hit_pending;         /* melee hit not yet resolved */
@@ -383,6 +386,8 @@ typedef struct {
     int perks[PK_COUNT];
     int hp, maxhp;
     Stack weapon;
+    Stack slots[WSLOTS];      /* the rest of your weapons, and which slot the one in hand is (Actor.slots / wslot) */
+    int wslot;
     Stack inv[INV_MAX];
     int ninv;
     ItemId bag;
@@ -392,8 +397,8 @@ typedef struct {
     int level_scores[NUM_LEVELS];
     char level_grades[NUM_LEVELS][3];
     /* snapshot at level start (story-mode retry) */
-    int snap_hp, snap_ninv;
-    Stack snap_weapon, snap_inv[INV_MAX];
+    int snap_hp, snap_ninv, snap_wslot;
+    Stack snap_weapon, snap_slots[WSLOTS], snap_inv[INV_MAX];
     ItemId snap_bag;
     int snap_kills, snap_execs;
     /* between stores: RS_LEVEL resumes at the briefing, RS_HOME (store cleared) at the greenhouse */
@@ -470,14 +475,19 @@ bool inv_can_fit(Actor *a, ItemId id, int n);
 bool make_room(Actor *a, ItemId id, int n);      /* drops junk to fit a needed item */
 bool item_needed(ItemId id);
 bool cart_make_room(Cart *c, ItemId id, int n);
-void equip(Actor *a, Stack st);
 void drop_weapon(Actor *a, bool thrown);
+/* the player's weapon slots: slot k's weapon (the one in hand for k == wslot) */
+static inline Stack *weapon_slot(Actor *a, int k) { return k == a->wslot ? &a->weapon : &a->slots[k]; }
+int weapon_free_slot(Actor *a);                 /* an empty slot (the hands first), or -1 */
+bool weapon_select(Actor *a, int k);            /* take slot k's weapon in hand, the one in hand back to its slot */
+void weapon_cycle(Actor *a, int dir);           /* the next (1) / previous (-1) weapon you carry */
+Stack weapon_take(Actor *a, Stack *st);         /* a weapon into your slots and in hand; returns the one it replaced */
+Stack weapon_slot_remove(Actor *a, int k);      /* empty slot k, returning what was in it */
 int arch_pose_sprite(Actor *a, int *grip_x, int *grip_y);
 bool can_craft(Actor *a, const Recipe *r);
 bool craft(Actor *a, const Recipe *r);
 int total_have(ItemId id);         /* player bag + cart in exit zone etc. */
 void use_heal(Actor *a);
-void swap_weapon(Actor *a);
 bool cart_counts(const Cart *c);    /* this cart's load counts towards the list (and goes home with you) */
 int craft_have(Actor *a, ItemId id);   /* units crafting may use (shopping-list items the list still needs are kept) */
 bool craft_list_blocked(Actor *a, const Recipe *r);  /* would have the ingredients, but they're on the list */

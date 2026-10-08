@@ -185,6 +185,30 @@ static void draw_weapon_panel(void) {
     }
 }
 
+/* the weapons you carry, a box a slot over the hands panel: the one in hand lit up, the keys that take each in hand */
+static void draw_weapon_slots(void) {
+    Actor *p = player();
+    float x = 4, y = VIEW_H - 54;
+    char buf[8];
+    for (int k = 0; k < WSLOTS; k++) {
+        bool held = k == p->wslot;
+        const Stack *s = held && W.hub ? hub_packed() : weapon_slot(p, k);   /* at the Greenhouse it's packed */
+        float bx = x + k * 22;
+        gfx_fill(bx, y, 20, 20, held ? rgba(255, 212, 71, 46) : rgba(11, 10, 16, 150));
+        gfx_rect(bx, y, 20, 20, held ? COL_YELLOW : rgba(255, 255, 255, 40));
+        if (s->id) gfx_spr_c(ITEMS[s->id].spr, bx + 10, y + 10, held && !W.hub ? TINT_NONE : rgba(255, 255, 255, 140));
+        if (s->count > 1) {
+            SDL_snprintf(buf, sizeof buf, "%d", s->count);
+            gfx_text(FONT_SMALL, buf, bx + 19, y + 12, COL_WHITE, TXT_RIGHT | TXT_OUTLINE);
+        }
+        if (!IN.pad_active) {
+            SDL_snprintf(buf, sizeof buf, "%d", k + 1);
+            gfx_text(FONT_SMALL, buf, bx + 2, y + 1, held ? COL_YELLOW : COL_GREY, TXT_OUTLINE);
+        }
+    }
+    if (!W.hub) gfx_text(FONT_SMALL, ctl("^kQ / wheel", "^kY / D-PAD"), x + WSLOTS * 22 + 2, y + 7, COL_GREY, TXT_OUTLINE);
+}
+
 static void draw_bag_panel(void) {
     Actor *p = player();
     float w = 92, h = 28, x = VIEW_W - w - 4, y = VIEW_H - 32;
@@ -421,6 +445,7 @@ static void draw_closed_sign(float t) {
 
 void hud_draw_gear(void) {
     draw_hearts(6, 5);
+    draw_weapon_slots();
     draw_weapon_panel();
     draw_bag_panel();
     if (W.msg_t > 0) {
@@ -441,6 +466,7 @@ void hud_draw(void) {
     draw_list(3, 15);
     draw_score();
     draw_crew();
+    draw_weapon_slots();
     draw_weapon_panel();
     draw_bag_panel();
     draw_exit_arrow();
@@ -488,7 +514,7 @@ void hud_draw(void) {
 /* ======================================================= inventory screen */
 typedef enum { FOC_HANDS, FOC_BAG, FOC_STORE, FOC_CRAFT } Focus;
 static Focus foc = FOC_BAG;
-static int sel_bag, sel_store, sel_craft;
+static int sel_bag, sel_store, sel_craft, sel_hand;   /* sel_hand: a weapon slot */
 static char inv_msg[64];
 static float inv_msg_t;
 
@@ -559,9 +585,11 @@ static void bag_primary(int k) {
     Stack s = p->inv[k];
     const ItemDef *it = &ITEMS[s.id];
     if (it->cat == CAT_WEAPON) {
+        /* in hand: a free slot takes it, with every slot full the one in hand goes in the bag instead */
         bag_take(k);
-        if (p->weapon.id && !inv_add(p, p->weapon)) pickup_spawn(p->weapon, p->pos, v2(0, 0));
-        p->weapon = s;
+        Stack old = weapon_take(p, &s);
+        if (s.count > 0 && !inv_add(p, s)) pickup_spawn(s, p->pos, v2(0, 0));   /* the rest of a stack that topped yours up */
+        if (old.id && !inv_add(p, old)) pickup_spawn(old, p->pos, v2(0, 0));
         audio_play(SFX_PICKUP_WEAPON, 0.7f, 0, 1);
         return;
     }
@@ -603,9 +631,11 @@ static void bag_drop(int k) {
 static void store_primary(int k) {
     if (!st.items || k < 0 || k >= *st.n) return;
     Actor *p = player();
-    if (ITEMS[st.items[k].id].cat == CAT_WEAPON && !p->weapon.id) {
-        p->weapon = st.items[k];
+    if (ITEMS[st.items[k].id].cat == CAT_WEAPON && weapon_free_slot(p) >= 0) {   /* a free slot: in hand; otherwise the bag */
+        Stack s = st.items[k];
         store_remove(k);
+        weapon_take(p, &s);
+        if (s.count > 0 && !store_put(s) && !inv_add(p, s)) pickup_spawn(s, st.pos, v2(0, 0));
         audio_play(SFX_PICKUP_WEAPON, 0.7f, 0, 1);
         return;
     }
@@ -633,16 +663,17 @@ void inventory_update(float dt) {
             else sel_bag = CLAMP(sel_bag + dir, 0, 23);
         } else if (foc == FOC_CRAFT && dir < 0) foc = FOC_BAG;
         else if (foc == FOC_STORE) sel_store = CLAMP(sel_store + dir, 0, st.slots - 1);
+        else if (foc == FOC_HANDS) sel_hand = CLAMP(sel_hand + dir, 0, WSLOTS - 1);
         audio_play(SFX_UI_MOVE, 0.75f, 0, 1);
     }
     if (IN.repeat[ACT_MENU_UP] || IN.repeat[ACT_MENU_DOWN]) {
         int dir = IN.repeat[ACT_MENU_DOWN] ? 1 : -1;
         if (foc == FOC_CRAFT) sel_craft = (sel_craft + dir + NUM_RECIPES) % NUM_RECIPES;
         else if (foc == FOC_BAG) {
-            if (dir < 0 && sel_bag < 4) foc = FOC_HANDS;
+            if (dir < 0 && sel_bag < 4) { foc = FOC_HANDS; sel_hand = MINF(sel_bag, WSLOTS - 1); }
             else if (dir > 0 && sel_bag + 4 > 23 && st.items) foc = FOC_STORE;
             else sel_bag = CLAMP(sel_bag + dir * 4, 0, 23);
-        } else if (foc == FOC_HANDS && dir > 0) foc = FOC_BAG;
+        } else if (foc == FOC_HANDS && dir > 0) { foc = FOC_BAG; sel_bag = sel_hand; }
         else if (foc == FOC_STORE && dir < 0) foc = FOC_BAG;
         audio_play(SFX_UI_MOVE, 0.75f, 0, 1);
     }
@@ -658,7 +689,8 @@ void inventory_update(float dt) {
             float x = bx + (k % 4) * 26, y = by + (k / 4) * 26;
             if (m.x >= x && m.x < x + 24 && m.y >= y && m.y < y + 24) { foc = FOC_BAG; sel_bag = k; hit = true; }
         }
-        if (m.x >= 24 && m.x < 48 && m.y >= 30 && m.y < 54) { foc = FOC_HANDS; hit = true; }
+        for (int k = 0; k < WSLOTS; k++)
+            if (m.x >= 24 + k * 26 && m.x < 48 + k * 26 && m.y >= 30 && m.y < 54) { foc = FOC_HANDS; sel_hand = k; hit = true; }
         if (st.items)
             for (int k = 0; k < st.slots; k++) {
                 float x = 136 + (k % 4) * 26, y = by + (k / 4) * 26;
@@ -671,20 +703,24 @@ void inventory_update(float dt) {
         if (IN.click && hit) act = true;
         if (IN.rclick && hit) drop = true;
     }
+    /* 1-3: that slot in hand (at the Greenhouse this is where you choose the one you'll have in hand at the store) */
+    for (int k = 0; k < WSLOTS; k++) if (IN.pressed[ACT_SLOT1 + k]) weapon_select(p, k);
+    Stack *hand = weapon_slot(p, sel_hand);
     if (move) {
         if (foc == FOC_BAG) bag_to_store(sel_bag);
         else if (foc == FOC_STORE) store_primary(sel_store);
-        else if (foc == FOC_HANDS && p->weapon.id) {
-            if (store_put(p->weapon)) { p->weapon.id = IT_NONE; audio_play(SFX_PICKUP_WEAPON, 0.6f, 0, 0.9f); }
+        else if (foc == FOC_HANDS && hand->id) {
+            if (store_put(*hand)) { weapon_slot_remove(p, sel_hand); audio_play(SFX_PICKUP_WEAPON, 0.6f, 0, 0.9f); }
             else store_full();
         }
         list_recount();
     }
     if (act) {
         switch (foc) {
-        case FOC_HANDS:
-            if (p->weapon.id) {
-                if (inv_add(p, p->weapon)) { p->weapon.id = IT_NONE; audio_play(SFX_PICKUP_WEAPON, 0.6f, 0, 0.9f); }
+        case FOC_HANDS:   /* one on your back: in hand. The one in hand: into the bag */
+            if (sel_hand != p->wslot) weapon_select(p, sel_hand);
+            else if (hand->id) {
+                if (inv_add(p, *hand)) { weapon_slot_remove(p, sel_hand); audio_play(SFX_PICKUP_WEAPON, 0.6f, 0, 0.9f); }
                 else inv_note("No room in the bag.");
             }
             break;
@@ -707,7 +743,10 @@ void inventory_update(float dt) {
     }
     if (drop) {
         if (foc == FOC_BAG) bag_drop(sel_bag);
-        else if (foc == FOC_HANDS && p->weapon.id) { drop_weapon(p, false); audio_play(SFX_UI_BACK, 0.85f, 0, 1); }
+        else if (foc == FOC_HANDS && hand->id) {
+            pickup_spawn(weapon_slot_remove(p, sel_hand), p->pos, v2(frange(-30, 30), frange(-30, 30)));
+            audio_play(SFX_UI_BACK, 0.85f, 0, 1);
+        }
         else if (foc == FOC_STORE && st.items && sel_store < *st.n) {
             int pi = pickup_spawn(st.items[sel_store], st.pos, v2(frange(-30, 30), frange(-30, 30)));
             if (pi >= 0 && W.hub) W.pickups[pi].dropped = true;
@@ -753,9 +792,17 @@ void inventory_draw(void) {
     char buf[160];
     SDL_snprintf(buf, sizeof buf, "%s  %d/%d", ITEMS[RUN.bag].name, inv_used(p), inv_capacity(p));
     gfx_text(FONT_SMALL, buf, 60, 14, COL_WHITE, 0);
-    /* hands */
-    gfx_text(FONT_SMALL, "HANDS", 52, 38, COL_GREY, 0);
-    slot(24, 30, &p->weapon, foc == FOC_HANDS, false);
+    /* the weapons you carry */
+    gfx_text(FONT_SMALL, "WEAPONS", 24 + WSLOTS * 26, 38, COL_GREY, 0);
+    for (int k = 0; k < WSLOTS; k++) {
+        float x = 24 + k * 26;
+        slot(x, 30, weapon_slot(p, k), foc == FOC_HANDS && sel_hand == k, false);
+        if (!IN.pad_active) {
+            SDL_snprintf(buf, sizeof buf, "%d", k + 1);
+            gfx_text(FONT_SMALL, buf, x + 22, 31, k == p->wslot ? COL_YELLOW : COL_GREY, TXT_RIGHT | TXT_OUTLINE);
+        }
+        if (k == p->wslot) gfx_text(FONT_SMALL, "IN HAND", x + 12, 56, COL_YELLOW, TXT_CENTER);
+    }
     float bx = 24, by = 66;
     for (int k = 0; k < 24; k++) {
         Stack *s = k < p->ninv ? &p->inv[k] : NULL;
@@ -804,7 +851,7 @@ void inventory_draw(void) {
     const char *desc = NULL;
     const char *title = NULL;
     if (foc == FOC_BAG && sel_bag < p->ninv) ds = &p->inv[sel_bag];
-    if (foc == FOC_HANDS && p->weapon.id) ds = &p->weapon;
+    if (foc == FOC_HANDS && weapon_slot(p, sel_hand)->id) ds = weapon_slot(p, sel_hand);
     if (foc == FOC_STORE && st.items && sel_store < *st.n) ds = &st.items[sel_store];
     if (ds) {
         title = ITEMS[ds->id].name;
@@ -821,6 +868,13 @@ void inventory_draw(void) {
     if (st.items && !strcmp(st.name, "VAN"))
         help = ctl("^yLMB/E^0 use/equip  ^yQ^0 bag/van  ^yRMB/R^0 drop  ^yTAB^0 close", "^yA^0 use/equip  ^yY^0 bag/van  ^yRB^0 drop  ^yB^0 close");
     if (foc == FOC_CRAFT) help = ctl("^yLMB/E^0 craft  ^yTAB^0 close", "^yA^0 craft  ^yB^0 close");
+    char hbuf[128];
+    if (foc == FOC_HANDS) {
+        const char *what = sel_hand != p->wslot ? "in hand" : "into the bag";
+        if (IN.pad_active) SDL_snprintf(hbuf, sizeof hbuf, "^yA^0 %s  ^yRB^0 drop  ^yB^0 close", what);
+        else SDL_snprintf(hbuf, sizeof hbuf, "^yLMB/E^0 %s  ^y1-3^0 in hand  ^yRMB/R^0 drop  ^yTAB^0 close", what);
+        help = hbuf;
+    }
     gfx_text(FONT_SMALL, help, 454, 237, COL_GREY, TXT_RIGHT);
     if (inv_msg_t > 0) gfx_text(FONT_SMALL, inv_msg, 130, 224, COL_ORANGE, TXT_CENTER | TXT_OUTLINE);
     hud_cursor();

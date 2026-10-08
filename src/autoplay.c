@@ -157,6 +157,11 @@ void autoplay_update(float dt) {
             return;
         }
     }
+    /* bare hands, or a gun with nothing left to shoot it with: take something off your back */
+    const WeaponDef *hw = item_weapon(p->weapon.id);
+    if ((!p->weapon.id || (hw->kind == WK_GUN && p->weapon.cond <= 0 && inv_count(p, hw->ammo) <= 0)) && press_cd <= 0)
+        for (int k = 0; k < WSLOTS; k++)
+            if (k != p->wslot && p->slots[k].id) { IN.pressed[ACT_SLOT1 + k] = true; press_cd = 0.3f; break; }
     /* fight */
     int e = p->cart >= 0 ? -1 : nearest_enemy(150);
     if (e >= 0) {

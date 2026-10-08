@@ -9,6 +9,8 @@ typedef enum {
     ACT_ATTACK, ACT_THROW, ACT_INTERACT, ACT_EXECUTE, ACT_LOOK,
     ACT_INVENTORY, ACT_HEAL, ACT_SWAP, ACT_RELOAD, ACT_PAUSE,
     ACT_CONFIRM, ACT_BACK, ACT_MENU_UP, ACT_MENU_DOWN, ACT_MENU_LEFT, ACT_MENU_RIGHT,
+    ACT_SLOT1, ACT_SLOT2, ACT_SLOT3,      /* take that weapon slot in hand (keys 1-3) */
+    ACT_WEAPON_NEXT, ACT_WEAPON_PREV,     /* mouse wheel, d-pad right / left (ACT_SWAP steps forward too) */
     ACT_COUNT
 } Action;
 

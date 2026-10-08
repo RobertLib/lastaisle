@@ -18,9 +18,10 @@
 #define LIM_THRESH    0.84f
 #define LOOP_TIMEOUT  (AU_RATE / 4)  /* loops not refreshed for 250 ms fade out */
 #define MERGE_WINDOW  (AU_RATE / 100) /* identical sfx within 10 ms are merged */
+#define MAX_TALK      24          /* talk voices (audio_voice) */
 
-enum { CMD_PLAY, CMD_MUSIC };
-typedef struct { uint8_t type, id; float vol, pan, pitch; } Cmd;
+enum { CMD_PLAY, CMD_MUSIC, CMD_SAY };
+typedef struct { uint8_t type, id, var; float vol, pan, pitch; } Cmd;   /* CMD_SAY: id = voice, var = syllable */
 
 typedef struct {
     const AuSample *s;
@@ -39,6 +40,9 @@ static struct {
     bool inited;
     AuSample sfx[SFX_COUNT][AU_SFX_MAXVAR];
     int nvar[SFX_COUNT];
+    AuSample talk[MAX_TALK][AUDIO_SYLLABLES];   /* written on the game thread before their handle is ever sent */
+    TalkVoice talk_def[MAX_TALK];
+    int ntalk;
     uint8_t last_var[SFX_COUNT];
     AuRng rng;
     Voice v[MAX_SLOTS];
@@ -67,9 +71,10 @@ static inline float u2f(uint32_t u) { union { float f; uint32_t u; } c; c.u = u;
 static inline float ldf(atomic_uint *a) { return u2f(atomic_load_explicit(a, memory_order_relaxed)); }
 static inline void stf(atomic_uint *a, float f) { atomic_store_explicit(a, f2u(f), memory_order_relaxed); }
 
-/* max simultaneous instances per sfx (oldest instance is faded out beyond this) */
+/* max simultaneous instances per sfx (oldest instance is faded out beyond this); a talk voice's id is SFX_COUNT + its handle */
 static int sfx_cap(int id)
 {
+    if (id >= SFX_COUNT) return 2;
     switch (id) {
     case SFX_FOOTSTEP: case SFX_CART_ROLL: case SFX_LOOT_RUMMAGE: return 3;
     case SFX_TYPE: case SFX_UI_MOVE: case SFX_COMBO: case SFX_HEARTBEAT: case SFX_RADIO: return 2;
@@ -120,7 +125,7 @@ static float sfx_jitter(int id)
     }
 }
 
-static void start_voice(int id, float vol, float pan, float pitch)
+static const AuSample *pick_sfx(int id)
 {
     int nv = M.nvar[id] > 0 ? M.nvar[id] : 1;
     int var = 0;
@@ -129,7 +134,11 @@ static void start_voice(int id, float vol, float pan, float pitch)
         if (var >= M.last_var[id]) var++;
         M.last_var[id] = (uint8_t)var;
     }
-    const AuSample *s = &M.sfx[id][var];
+    return &M.sfx[id][var];
+}
+
+static void start_voice(int id, const AuSample *s, float vol, float pan, float pitch)
+{
     if (!s->data || vol <= 0.0001f) return;
     float jit = sfx_jitter(id);
     if (jit > 0.0f) pitch *= 1.0f + jit * au_rnd2(&M.rng);
@@ -235,7 +244,8 @@ static void drain_commands(void)
     unsigned tail = atomic_load_explicit(&ring_tail, memory_order_relaxed);
     while (tail != head) {
         Cmd c = ring[tail & (CMD_RING - 1)];
-        if (c.type == CMD_PLAY) start_voice(c.id, c.vol, c.pan, c.pitch);
+        if (c.type == CMD_PLAY) start_voice(c.id, pick_sfx(c.id), c.vol, c.pan, c.pitch);
+        else if (c.type == CMD_SAY) start_voice(SFX_COUNT + c.id, &M.talk[c.id][c.var], c.vol, c.pan, c.pitch);
         else if (c.type == CMD_MUSIC) au_music_command(c.id);
         tail++;
     }
@@ -396,6 +406,9 @@ static void free_all(void)
     au_music_shutdown();
     for (int i = 0; i < SFX_COUNT; i++)
         for (int v = 0; v < AU_SFX_MAXVAR; v++) au_sample_free(&M.sfx[i][v]);
+    for (int i = 0; i < M.ntalk; i++)
+        for (int v = 0; v < AUDIO_SYLLABLES; v++) au_sample_free(&M.talk[i][v]);
+    M.ntalk = 0;
     M.inited = false;
 }
 
@@ -447,7 +460,31 @@ void audio_play(SfxId id, float vol, float pan, float pitch)
     vol = sane(vol, 0.0f); pan = sane(pan, 0.0f); pitch = sane(pitch, 1.0f);
     if (!(vol > 0.0f)) return;
     if (!(pitch > 0.0f)) pitch = 1.0f;
-    Cmd c = { CMD_PLAY, (uint8_t)id, au_clampf(vol, 0.0f, 2.0f), au_clampf(pan, -1.0f, 1.0f), au_clampf(pitch, 0.05f, 8.0f) };
+    Cmd c = { CMD_PLAY, (uint8_t)id, 0, au_clampf(vol, 0.0f, 2.0f), au_clampf(pan, -1.0f, 1.0f), au_clampf(pitch, 0.05f, 8.0f) };
+    push_cmd(c);
+}
+
+int audio_voice(const TalkVoice *v)
+{
+    if (!M.inited || !v) return -1;
+    for (int i = 0; i < M.ntalk; i++) if (!memcmp(&M.talk_def[i], v, sizeof *v)) return i;
+    if (M.ntalk >= MAX_TALK) { SDL_Log("audio: no room for another talk voice"); return -1; }
+    int h = M.ntalk;
+    if (!au_talk_build(v, M.talk[h])) return -1;
+    M.talk_def[h] = *v;
+    M.ntalk++;   /* the audio thread only ever looks at it once a CMD_SAY for it comes through the ring */
+    return h;
+}
+
+void audio_say(int voice, int syllable, float vol, float pan, float pitch)
+{
+    if (!M.inited || voice < 0 || voice >= M.ntalk) return;
+    vol = sane(vol, 0.0f); pan = sane(pan, 0.0f); pitch = sane(pitch, 1.0f);
+    if (!(vol > 0.0f)) return;
+    if (!(pitch > 0.0f)) pitch = 1.0f;
+    syllable %= AUDIO_SYLLABLES;
+    if (syllable < 0) syllable += AUDIO_SYLLABLES;
+    Cmd c = { CMD_SAY, (uint8_t)voice, (uint8_t)syllable, au_clampf(vol, 0.0f, 2.0f), au_clampf(pan, -1.0f, 1.0f), au_clampf(pitch, 0.05f, 8.0f) };
     push_cmd(c);
 }
 
@@ -467,7 +504,7 @@ void audio_music(MusicId id)
     if (!M.inited || (int)id < 0 || id >= MUS_COUNT) return;
     if ((int)id == g_music_req) return;
     g_music_req = (int)id;
-    Cmd c = { CMD_MUSIC, (uint8_t)id, 0, 0, 0 };
+    Cmd c = { CMD_MUSIC, (uint8_t)id, 0, 0, 0, 0 };
     push_cmd(c);
 }
 

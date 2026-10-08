@@ -91,7 +91,8 @@ then make it back to your van alive.
   a homecoming to the Greenhouse that fills with light and people as the camp grows, and an ending that
   takes its time. Layered parallax, weather, letterbox, dithered dissolves and wipes; every scene skippable.
 * **Everything is hand-made pixel art** — every sprite, tile, font glyph and UI element is
-  authored pixel by pixel in `art/*.art`. Music and sound are synthesized in real time.
+  authored pixel by pixel in `art/*.art`. Music and sound are synthesized in real time - even the voices: at the
+  camp everybody talks in made-up syllables, in a voice of their own.
 
 ## Controls
 

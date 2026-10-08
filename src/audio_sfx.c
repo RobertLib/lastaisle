@@ -293,14 +293,22 @@ typedef struct {
     int v0, v1;                /* vowel morph */
     float breath, drive, jitter, vib, vrate, gurgle;
     float att, rel, fshift;    /* fshift scales formants (1 = adult male) */
+    float creak;               /* every other glottal pulse weaker by this much: a rough, creaky voice */
+    float tilt;                /* one-pole low-pass on the glottal pulses (Hz, 0 = off): softer, breathier source */
+    float nasal;               /* 0..1: a nasal resonance in, the first and third formants damped */
+    float f2shift;             /* extra scale on the second formant (0 = 1): the vowels lean front or back */
+    float body;                /* 0..1: the first formant as a low-pass (a real throat's) - keeps the low harmonics a deep voice needs */
 } VoiceP;
 static void l_voice_p(const VoiceP *p)
 {
     int s0 = T(p->t0), n = T(p->dur);
     float att = p->att > 0.0f ? p->att : 0.015f, rel = p->rel > 0.0f ? p->rel : p->dur * 0.4f;
-    float fs = p->fshift > 0.0f ? p->fshift : 1.0f;
-    AuSvf f1 = {0}, f2 = {0}, f3 = {0}, gb = {0};
+    float fs = p->fshift > 0.0f ? p->fshift : 1.0f, f2s = p->f2shift > 0.0f ? p->f2shift : 1.0f;
+    AuSvf f1 = {0}, f2 = {0}, f3 = {0}, gb = {0}, fn = {0};
     au_svf_set(&gb, 25.0f, 0.7f);
+    if (p->nasal > 0.0f) au_svf_set(&fn, 260.0f * fs, 3.0f);
+    float tc = p->tilt > 0.0f ? au_op_coef(p->tilt) : 0.0f, tl = 0.0f;
+    int cyc = 0;
     float ph = 0.0f, jit = 0.0f, gur = 0.0f;
     float dn = p->drive > 0.0f ? 1.0f / au_sat(p->drive) : 1.0f;
     for (int i = 0; i < n; i++) {
@@ -308,7 +316,7 @@ static void l_voice_p(const VoiceP *p)
         if ((i & 7) == 0) {
             const float *a = vowels[p->v0], *b = vowels[p->v1];
             float k = u * u * (3.0f - 2.0f * u);
-            float F1 = au_lerpf(a[0], b[0], k) * fs, F2 = au_lerpf(a[1], b[1], k) * fs, F3 = au_lerpf(a[2], b[2], k) * fs;
+            float F1 = au_lerpf(a[0], b[0], k) * fs, F2 = au_lerpf(a[1], b[1], k) * fs * f2s, F3 = au_lerpf(a[2], b[2], k) * fs;
             au_svf_set(&f1, F1, F1 / 90.0f);
             au_svf_set(&f2, F2, F2 / 110.0f);
             au_svf_set(&f3, F3, F3 / 160.0f);
@@ -318,9 +326,18 @@ static void l_voice_p(const VoiceP *p)
         pf *= 1.0f + p->jitter * jit * 0.05f;
         if (p->vib > 0.0f) pf *= 1.0f + p->vib * au_sin(t * p->vrate);
         float dt = pf / AU_FRATE;
-        ph += dt; if (ph >= 1.0f) ph -= 1.0f;
-        float src = -au_saw(ph, dt) + p->breath * au_rnd2(&rng) * 1.5f;
-        float y = au_svf_bp(&f1, src) + 0.6f * au_svf_bp(&f2, src) + 0.25f * au_svf_bp(&f3, src);
+        ph += dt; if (ph >= 1.0f) { ph -= 1.0f; cyc ^= 1; }
+        float glot = -au_saw(ph, dt);
+        if (tc > 0.0f) { tl += tc * (glot - tl); glot = tl; }
+        if (p->creak > 0.0f && cyc) glot *= 1.0f - p->creak;
+        float src = glot + p->breath * au_rnd2(&rng) * 1.5f;
+        float y, y1;
+        if (p->body > 0.0f) { float lp1, bp1; au_svf_tick(&f1, src, &lp1, &bp1, NULL); y1 = au_lerpf(bp1, lp1, p->body); }
+        else y1 = au_svf_bp(&f1, src);
+        if (p->nasal > 0.0f)
+            y = (1.0f - 0.5f * p->nasal) * y1 + 0.6f * au_svf_bp(&f2, src)
+              + 0.25f * (1.0f - 0.4f * p->nasal) * au_svf_bp(&f3, src) + 0.9f * p->nasal * au_svf_bp(&fn, src);
+        else y = y1 + 0.6f * au_svf_bp(&f2, src) + 0.25f * au_svf_bp(&f3, src);
         if (p->gurgle > 0.0f) {
             gur = au_svf_lp(&gb, au_rnd2(&rng) * 6.0f);
             y *= 1.0f - p->gurgle + p->gurgle * au_clampf(0.5f + gur * 2.0f, 0.0f, 1.5f);
@@ -513,7 +530,7 @@ static void limit_offline(float ceiling)
     free(g);
 }
 
-static void finish(int id, float loud_db, int stereo)
+static void finish_to(AuSample *s, const char *name, float loud_db, int stereo)
 {
     /* DC / sub-rumble block */
     float hc = au_op_coef(18.0f), lpl = 0.0f, lpr = 0.0f;
@@ -544,12 +561,11 @@ static void finish(int id, float loud_db, int stereo)
         float tail = (float)sqrt(acc / w) / pk;
         int tf = (tail > 0.003f) ? (curN / 8 < T(0.25f) ? curN / 8 : T(0.25f)) : T(0.03f);
         for (int i = curN - tf; i < curN; i++) { float g = (float)(curN - i) / (float)tf; g *= g; gL[i] *= g; gR[i] *= g; }
-        if (tail > 0.003f) fprintf(stderr, "audio: sfx '%s' tail still at %.0f dB when its buffer ends\n", defs_name(id), 20.0 * log10(tail));
+        if (tail > 0.003f) fprintf(stderr, "audio: sfx '%s' tail still at %.0f dB when its buffer ends\n", name, 20.0 * log10(tail));
     }
     end += T(0.004f);
     if (end > curN) end = curN;
     int fade = T(0.004f);
-    AuSample *s = &g_out[id * AU_SFX_MAXVAR + g_variant];
     s->channels = stereo ? 2 : 1;
     s->frames = end + 1;
     s->data = (float *)calloc((size_t)s->frames * (size_t)s->channels, sizeof(float));
@@ -562,6 +578,8 @@ static void finish(int id, float loud_db, int stereo)
     }
     au_sample_make_env(s);
 }
+
+static void finish(int id, float loud_db, int stereo) { finish_to(&g_out[id * AU_SFX_MAXVAR + g_variant], defs_name(id), loud_db, stereo); }
 
 /* ------------------------------------------------------------------------ */
 /* sound designs                                                             */
@@ -955,6 +973,70 @@ static void sfx_surrender(void)
     VOICE(.t0 = 0.23f, .dur = 0.38f, .amp = 0.9f, .p0 = 340, .pm = 320, .p1 = 235, .v0 = V_O, .v1 = V_OO,
           .breath = 0.55f, .drive = 1.2f, .jitter = 1.5f, .vib = 0.045f, .vrate = 8.5f, .att = 0.02f, .rel = 0.18f, .fshift = 1.15f);
     TONE(.t0 = 0.5f, .dur = 0.28f, .amp = 0.22f, .wave = TW_TRI, .f0 = 880, .f1 = 415, .att = 0.004f, .dec = 0.1f);
+}
+
+/* talk (audio_voice): one syllable of made-up speech - a consonant (a voiced or a voiceless stop, a hum, a hiss,
+   a breath, or a glide straight into it), then the vowel, sliding a little towards the next one */
+enum { ON_VOICED, ON_STOP, ON_NASAL, ON_HISS, ON_BREATH, ON_GLIDE };
+typedef struct { int on; float place; int v0, v1; } Syllable;
+static const Syllable SYLLABLES[16] = {
+    { ON_VOICED,  900, V_OO, V_A  },   /* ba */
+    { ON_VOICED, 3400, V_ER, V_E  },   /* de */
+    { ON_NASAL,     0, V_E,  V_I  },   /* mi */
+    { ON_NASAL,     0, V_U,  V_O  },   /* no */
+    { ON_GLIDE,     0, V_OO, V_A  },   /* wa */
+    { ON_VOICED, 2100, V_AE, V_E  },   /* ge */
+    { ON_GLIDE,     0, V_ER, V_U  },   /* lu */
+    { ON_BREATH,    0, V_A,  V_O  },   /* ho */
+    { ON_STOP,   1000, V_E,  V_I  },   /* pi */
+    { ON_STOP,   3800, V_AE, V_A  },   /* ta */
+    { ON_STOP,   1900, V_O,  V_OO },   /* ko */
+    { ON_NASAL,     0, V_U,  V_A  },   /* ma */
+    { ON_HISS,   5200, V_A,  V_AE },   /* sa */
+    { ON_GLIDE,     0, V_I,  V_E  },   /* ye */
+    { ON_GLIDE,     0, V_ER, V_OO },   /* ru */
+    { ON_BREATH,    0, V_A,  V_I  },   /* hai */
+};
+
+static void talk_syllable(const TalkVoice *v, const Syllable *sy, float lean)
+{
+    const float f0 = v->f0, fs = v->throat;
+    float t = 0, d = vr(0.078f, 0.12f) * v->drawl;
+    begin(0.13f + d);
+    switch (sy->on) {
+    case ON_VOICED:   /* closed lips or tongue, the voice humming behind them, then the release */
+        TONE(.t0 = 0, .dur = 0.018f, .amp = 0.18f, .wave = TW_SINE, .f0 = f0, .f1 = f0, .att = 0.004f, .dec = -1);
+        NOISE(.t0 = 0.016f, .dur = 0.02f, .amp = 0.5f, .type = NZ_BP, .f0 = sy->place * fs, .f1 = sy->place * fs * 0.8f,
+              .q = 1.4f, .att = 0.0004f, .dec = 0.004f);
+        t = 0.017f;
+        break;
+    case ON_STOP:     /* the release with no voice behind it, and a puff of air before the vowel */
+        NOISE(.t0 = 0, .dur = 0.02f, .amp = 0.7f, .type = NZ_BP, .f0 = sy->place * fs, .f1 = sy->place * fs * 0.85f,
+              .q = 1.3f, .att = 0.0003f, .dec = 0.004f);
+        NOISE(.t0 = 0.004f, .dur = 0.03f, .amp = 0.22f, .type = NZ_BP, .f0 = 1600 * fs, .f1 = 1300 * fs, .q = 0.9f, .att = 0.004f, .dec = -1);
+        t = 0.026f;
+        break;
+    case ON_NASAL:    /* a hum through the nose, the mouth opening out of it */
+        VOICE(.t0 = 0, .dur = 0.038f, .amp = 0.45f, .p0 = f0 * 0.97f, .pm = f0, .p1 = f0, .v0 = V_OO, .v1 = V_OO,
+              .breath = 0.05f, .drive = 1.2f, .jitter = 0.4f, .att = 0.006f, .rel = 0.016f, .fshift = fs * 0.75f, .nasal = 1.0f, .body = 1.0f);
+        t = 0.026f;
+        break;
+    case ON_HISS:
+        NOISE(.t0 = 0, .dur = 0.06f, .amp = 0.3f, .type = NZ_BP, .f0 = sy->place * fs, .f1 = sy->place * fs * 1.1f, .q = 1.6f, .att = 0.012f, .dec = -1);
+        t = 0.045f;
+        break;
+    case ON_BREATH:
+        NOISE(.t0 = 0, .dur = 0.04f, .amp = 0.3f, .type = NZ_BP, .f0 = 1500 * fs, .f1 = 1100 * fs, .q = 0.8f, .att = 0.008f, .dec = -1);
+        t = 0.024f;
+        break;
+    default: break;
+    }
+    /* the vowel: up a touch, then falling off - said, not sung (a sing-song voice climbs and falls further) */
+    VOICE(.t0 = t, .dur = d, .amp = 1.0f, .p0 = vr(f0, 0.03f), .pm = f0 * (1.03f + 0.1f * v->lilt), .p1 = vr(f0 * (0.92f - 0.08f * v->lilt), 0.03f),
+          .v0 = sy->v0, .v1 = sy->v1, .breath = 0.06f + 0.5f * v->breath, .drive = 1.4f + 1.8f * v->rasp, .jitter = 0.5f + 2.5f * v->rasp,
+          .creak = 0.55f * v->rasp, .tilt = 4500.0f - 3000.0f * au_clampf(v->breath, 0.0f, 1.0f), .nasal = v->nasal, .f2shift = lean, .body = 0.8f,
+          .att = sy->on == ON_GLIDE ? 0.014f : 0.007f, .rel = 0.032f * v->drawl, .fshift = fs);
+    fx_drive(0, 0, 1.2f);
 }
 
 /* animals: small, open vocal tracts (formants shifted up) over chest thumps and breath */
@@ -1598,4 +1680,35 @@ int au_sfx_build(AuSample out[SFX_COUNT][AU_SFX_MAXVAR], int nvar[SFX_COUNT])
     free(mem);
     gL = gR = tL = tR = cL = cR = NULL;
     return 1;
+}
+
+int au_talk_build(const TalkVoice *v, AuSample out[AUDIO_SYLLABLES])
+{
+    if (v->f0 < 30.0f || v->f0 > 1000.0f || v->throat < 0.5f || v->throat > 2.0f || v->drawl < 0.3f || v->drawl > 3.0f) return 0;
+    gCap = T(0.6f);
+    float *mem = (float *)malloc(sizeof(float) * (size_t)gCap * 4);
+    if (!mem) return 0;
+    gL = mem; gR = mem + gCap; tL = mem + 2 * gCap; tR = mem + 3 * gCap;
+    memset(out, 0, sizeof(AuSample) * AUDIO_SYLLABLES);
+    /* the accent: which 8 of the 16 syllables are theirs, and whether their vowels sit forward or back in the mouth */
+    AuRng ac;
+    au_rng_seed(&ac, 0xACCE47u + (uint32_t)v->accent * 2654435761u);
+    int pick[16];
+    for (int i = 0; i < 16; i++) pick[i] = i;
+    for (int i = 15; i > 0; i--) { int j = (int)(au_rng_next(&ac) % (uint32_t)(i + 1)), x = pick[i]; pick[i] = pick[j]; pick[j] = x; }
+    float lean = au_rrange(&ac, 0.93f, 1.07f);
+    int ok = 1;
+    g_variant = 1;   /* every syllable a little different from the designed one */
+    for (int k = 0; k < AUDIO_SYLLABLES; k++) {
+        au_rng_seed(&rng, 0x7A1C5u + (uint32_t)v->accent * 7919u + (uint32_t)k * 104729u);
+        au_rng_seed(&vrng, 0x5EED5u + (uint32_t)v->accent * 31u + (uint32_t)k * 977u);
+        talk_syllable(v, &SYLLABLES[pick[k]], lean);
+        finish_to(&out[k], "talk", -17.0f, 0);
+        if (!out[k].data) ok = 0;
+    }
+    g_variant = 0;
+    free(mem);
+    gL = gR = tL = tR = cL = cR = NULL;
+    if (!ok) for (int k = 0; k < AUDIO_SYLLABLES; k++) au_sample_free(&out[k]);
+    return ok;
 }

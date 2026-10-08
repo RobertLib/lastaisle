@@ -111,6 +111,25 @@ void audio_shutdown(void);
 /* One-shot sound. vol 0..1, pan -1 (left) .. 1 (right), pitch multiplier (1 = normal). */
 void audio_play(SfxId id, float vol, float pan, float pitch);
 
+/* Talk: made-up speech, a syllable at a time, in a voice built to order. */
+typedef struct {
+    float f0;       /* speaking pitch, Hz: men ~85-140, women ~165-230, children ~260-320 */
+    float throat;   /* formants, the size of the throat: 1 = a grown man, ~1.15 a woman, ~1.4 a child */
+    float breath;   /* air in it: 0 clear .. 1 half a whisper */
+    float rasp;     /* grit: 0 smooth .. 1 gravel (an uneven, creaking pitch) */
+    float nasal;    /* 0 .. 1: talking through the nose */
+    float drawl;    /* syllable length: 1 normal, 0.8 clipped, 1.3 drawn out */
+    float lilt;     /* the tune inside a syllable: 0 flat, 1 sing-song */
+    int accent;     /* which syllables they favour, and which way their vowels lean */
+} TalkVoice;
+
+/* Synthesizes the voice's syllables the first time it's asked for (a few ms); the same voice again gets
+   the same handle. -1 when audio is off or the voices are all used up. */
+int audio_voice(const TalkVoice *v);
+/* One syllable (0..AUDIO_SYLLABLES-1) of a voice from audio_voice. pitch bends it (intonation, ~0.85..1.25). */
+#define AUDIO_SYLLABLES 8
+void audio_say(int voice, int syllable, float vol, float pan, float pitch);
+
 /* Continuous loops: call every frame with the desired volume (0 = silent).
    The mixer smooths volume/pitch changes and stops the voice after it fades out. */
 void audio_loop(LoopId id, float vol, float pitch);

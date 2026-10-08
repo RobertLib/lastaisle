@@ -152,6 +152,8 @@ static struct {
     const char *pages[16];
     int npages, page;
     float type_t;
+    int voice;                     /* theirs, from audio_voice */
+    float said_t;                  /* H.t at their last syllable */
     /* the bench */
     float needle, ndir, speed, zone_c, zone_w, flash, shake;
     int reps, misses;
@@ -355,6 +357,87 @@ static void award(int stat, int xp, const char *note) {
     run_save();   /* the evening's work is written down at once */
 }
 
+/* ================================================================== voices */
+/* how they sound in the talk box: the voice itself (see TalkVoice in audio.h), how far it wanders from word to word,
+   how fast they talk */
+typedef struct { TalkVoice v; float wander, speed; } VoiceDef;
+static const VoiceDef VOICES[AR_COUNT] = {
+    /*              f0    throat breath rasp   nasal  drawl  lilt  accent  wander speed */
+    [AR_HOLLIS] = {{108, 1.0f,  0.08f, 0.25f, 0.1f,  1.1f,  0.15f, 1},  0.05f, 0.85f},   /* the deputy: level, unhurried */
+    [AR_BEX]    = {{238, 1.24f, 0.25f, 0,     0.1f,  0.8f,  0.8f,  2},  0.14f, 1.3f},    /* fifteen and can't wait */
+    [AR_OZZIE]  = {{88,  0.9f,  0.06f, 0.15f, 0,     1.25f, 0.2f,  3},  0.06f, 0.8f},    /* the doorman: a slow rumble */
+    [AR_CARMEN] = {{172, 1.13f, 0.2f,  0.1f,  0,     0.85f, 0.1f,  4},  0.05f, 0.95f},   /* low, clipped, flat */
+    [AR_WES]    = {{118, 0.98f, 0.15f, 0.6f,  0.2f,  1.0f,  0.4f,  5},  0.11f, 0.95f},   /* thirty years on roofs: gravel */
+    [AR_ROSA]   = {{178, 1.12f, 0.25f, 0.2f,  0.05f, 1.05f, 0.3f,  6},  0.07f, 0.95f},   /* grey and steady */
+    [AR_THEO]   = {{295, 1.4f,  0.2f,  0,     0.2f,  0.95f, 0.9f,  7},  0.16f, 1.1f},    /* six */
+    [AR_GUS]    = {{132, 1.03f, 0.1f,  0.2f,  0.35f, 0.85f, 0.6f,  8},  0.13f, 1.1f},    /* quick, through the nose */
+    [AR_JUNE]   = {{192, 1.16f, 0.3f,  0,     0.05f, 0.95f, 0.2f,  9},  0.07f, 1.0f},    /* calm */
+    [AR_DEE]    = {{96,  0.94f, 0.05f, 0.35f, 0,     1.05f, 0.1f,  10}, 0.05f, 0.95f},   /* deep, and not many words */
+    [AR_MARTA]  = {{214, 1.19f, 0.35f, 0.05f, 0.15f, 1.0f,  0.7f,  11}, 0.12f, 1.1f},    /* warm, sing-song */
+    [AR_FOLK_A] = {{124, 1.02f, 0.12f, 0.1f,  0.15f, 1.0f,  0.35f, 12}, 0.1f,  1.0f},
+    [AR_FOLK_B] = {{225, 1.2f,  0.4f,  0,     0.25f, 0.9f,  0.5f,  13}, 0.1f,  1.05f},
+    [AR_FOLK_C] = {{170, 1.1f,  0.3f,  0.35f, 0.1f,  1.15f, 0.4f,  14}, 0.09f, 0.95f},   /* older */
+};
+
+static VoiceDef voice_of(int arch) {
+    VoiceDef v = arch >= 0 && arch < AR_COUNT ? VOICES[arch] : (VoiceDef){0};
+    return v.speed > 0 ? v : (VoiceDef){{120, 1, 0.1f, 0.1f, 0.1f, 1, 0.3f, 0}, 0.1f, 1};
+}
+
+static bool letter(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'); }
+static bool vowel(char c) { return c && SDL_strchr("aeiouyAEIOUY", c); }
+
+/* the page types out in their voice: a made-up syllable at the start of each word and on its later vowels.
+   The same word always comes out the same, a question goes up at the end, a full stop down, a word in capitals louder */
+static void speak(const char *page, int from, int to) {
+    const char *at = NULL;
+    int nth = 0, k = 0, since = 0, n = 0;
+    char prev = ' ';
+    for (const char *s = page; *s && k < to; s++) {
+        char c = *s;
+        if (c == '\n') { prev = ' '; continue; }   /* a line break doesn't count as typed */
+        if (letter(c)) {
+            bool on = false;
+            if (!letter(prev) && prev != '\'') { on = true; n = 0; since = 0; }
+            else if (++since >= 5 || (since >= 3 && vowel(c) && !vowel(prev))) on = true;
+            if (on) {
+                since = 0;
+                if (k >= from) { at = s; nth = n; }
+                n++;
+            }
+        }
+        prev = c;
+        k++;
+    }
+    if (!at || H.t - H.said_t < 0.05f) return;   /* two at once is a stammer: skip the second */
+    H.said_t = H.t;
+    /* the whole word (back to its start, on to its end): which syllable it is, how high */
+    const char *w0 = at, *w1 = at;
+    while (w0 > page && (letter(w0[-1]) || w0[-1] == '\'')) w0--;
+    while (letter(*w1) || (*w1 == '\'' && letter(w1[1]))) w1++;
+    uint32_t h = 2166136261u;
+    bool caps = w1 - w0 > 1;
+    for (const char *q = w0; q < w1; q++) {
+        h = (h ^ (uint8_t)(*q | 32)) * 16777619u;
+        if (*q >= 'a' && *q <= 'z') caps = false;
+    }
+    h = (h ^ (uint32_t)nth) * 16777619u;
+    h ^= h >> 15;
+    float pitch = 1 + voice_of(H.arch).wander * ((h >> 8 & 0xFFFF) / 32767.5f - 1);
+    float vol = 0.5f + 0.1f * frange(0, 1);
+    const char *e = w1;
+    while (*e == '"' || *e == ')') e++;
+    if (*e == '?') pitch *= 1.08f + 0.05f * nth;   /* the last word of a question climbs */
+    else if (*e == '.') pitch *= 0.93f;
+    else if (*e == '!') { pitch *= 1.06f; vol *= 1.15f; }
+    if (caps) { pitch *= 1.1f; vol *= 1.3f; }
+    if (H.who < 0) { pitch *= 0.9f; vol *= 0.45f; }   /* Theo, talking in his sleep */
+    float pan = 0;
+    Actor *p = player();
+    if (p) pan = CLAMP(((H.who >= 0 ? W.actors[H.who].pos.x : HUB.post[AR_THEO].x) - p->pos.x) / 160, -0.4f, 0.4f);
+    audio_say(H.voice, (int)(h % AUDIO_SYLLABLES), vol, pan, pitch);
+}
+
 /* ================================================================== talking */
 /* Rosa's last page: tonight's list, read out */
 static void list_page(char *buf, int n) {
@@ -436,6 +519,9 @@ static void talk_open(int who, int arch) {
     H.arch = arch;
     H.line = NULL;
     H.type_t = 0;
+    VoiceDef voice = voice_of(arch);
+    H.voice = audio_voice(&voice.v);   /* built the first time they talk */
+    H.said_t = -1;
     H.page = 0;
     H.sel = 0;
     H.answered = false;
@@ -655,10 +741,9 @@ static void talk_back(void) {
 
 static void talk_update(float dt) {
     int before = (int)H.type_t;
-    H.type_t += dt * 60;
+    H.type_t += dt * 60 * voice_of(H.arch).speed;
     int len = page_len(H.pages[H.page]);
-    if ((int)H.type_t != before && (int)H.type_t <= len && ((int)H.type_t % 3) == 0)
-        audio_play(SFX_TYPE, 0.6f, 0, frange(0.95f, 1.2f));
+    if ((int)H.type_t > before && before < len) speak(H.pages[H.page], before, MINF((int)H.type_t, len));
     if (talk_choosing()) {
         if (IN.repeat[ACT_MENU_LEFT] || IN.repeat[ACT_MENU_RIGHT] || IN.repeat[ACT_MENU_UP] || IN.repeat[ACT_MENU_DOWN]) {
             H.sel ^= 1;

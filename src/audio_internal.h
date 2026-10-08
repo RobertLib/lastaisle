@@ -177,6 +177,8 @@ void au_sample_make_env(AuSample *s);
 #define AU_SFX_MAXVAR 4
 int  au_sfx_build(AuSample out[SFX_COUNT][AU_SFX_MAXVAR], int nvar[SFX_COUNT]);
 const char *au_sfx_name(int id);
+/* audio_sfx.c - a talk voice's syllables (audio_voice) */
+int  au_talk_build(const TalkVoice *v, AuSample out[AUDIO_SYLLABLES]);
 
 /* audio_loops.c - real-time loop generators. Adds into L/R. rate = pitch*timescale.
    vol0 -> vol1 is ramped linearly across the n samples. */
